@@ -7,6 +7,8 @@
 
   const D = {
     es: {
+      "brand": "Radar de Ofertas",
+      "foot.copy": "© 2026 Radar de Ofertas",
       "meta.title": "Radar de Ofertas · rebajas de 8 tiendas comparadas",
       "meta.desc": "Las mejores ofertas de Amazon, Walmart, Target, Best Buy, eBay, Etsy, Temu y AliExpress en un solo lugar, con precio, descuento y fotos de cada producto.",
       "logo.aria": "Radar de Ofertas, inicio",
@@ -151,9 +153,11 @@
     },
 
     en: {
-      "meta.title": "Radar de Ofertas · deals from 8 stores, compared",
+      "brand": "Deal Radar",
+      "foot.copy": "© 2026 Deal Radar",
+      "meta.title": "Deal Radar · deals from 8 stores, compared",
       "meta.desc": "The best deals from Amazon, Walmart, Target, Best Buy, eBay, Etsy, Temu and AliExpress in one place, with the price, discount and photos of every product.",
-      "logo.aria": "Radar de Ofertas, home",
+      "logo.aria": "Deal Radar, home",
       "lang.aria": "Language",
       "search.placeholder": "Search all 8 stores",
       "search.aria": "Search products",
