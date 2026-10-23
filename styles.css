@@ -385,10 +385,7 @@ dialog::backdrop { background: rgba(0,0,0,.75); }
   .t-statement { grid-column: 1 / -1; }
   .detail, .cmp-wrap { padding: 20px; }
   .sim-row { grid-template-columns: repeat(2, 1fr); }
-  .compare-row { flex-wrap: wrap; gap: 8px 12px; padding-block: 10px; }
-  .compare-hint:not(.full) { display: none; }
-  .compare-hint.full { flex-basis: 100%; order: 3; margin-left: 0; }
-  body.has-compare { padding-bottom: 140px; }
+  body.has-compare { padding-bottom: 150px; }
 }
 .hero + .showcase { margin-top: clamp(56px, 6vw, 96px); }
 
@@ -435,3 +432,20 @@ dialog::backdrop { background: rgba(0,0,0,.75); }
 @media (max-width: 1080px) { :root { --cat-rows: 4; } }
 @media (max-width: 640px) { :root { --row-h: 40px; } .show-note { min-height: 190px; } }
 @media (pointer: coarse) { :root { --row-h: 44px; } }
+
+/* Móvil: barra del comparador en dos filas (miniaturas arriba, botones abajo) y botón «Comparar» de la tarjeta compacto.
+   Va al final para ganar a las zonas de toque de 44 px. */
+@media (max-width: 640px) {
+  .compare-row { flex-wrap: wrap; gap: 10px 16px; padding-block: 16px 12px; }
+  .compare-slots { flex: 1 1 100%; flex-wrap: wrap; gap: 14px; }
+  .slot .ph { width: 46px; height: 46px; }
+  .slot button { width: 26px; height: 26px; top: -9px; right: -9px; font-size: 13px; }
+  .compare-hint:not(.full) { display: none; }
+  .compare-hint.full { flex-basis: 100%; margin-left: 0; font-size: 0.75rem; }
+  #compare-open { flex: 1; min-height: 44px; padding-block: 10px; }
+  .compare-bar .linkbtn { flex: none; }
+
+  .cmp { min-height: 0; min-width: 0; padding: 3px 6px; gap: 3px; font-size: 0.6875rem; line-height: 1.3; }
+  .badge-off { padding: 3px 7px; font-size: 0.75rem; }
+  .cmp svg { width: 10px; height: 10px; }
+}
