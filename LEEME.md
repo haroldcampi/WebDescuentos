@@ -49,6 +49,13 @@ Para cobrar comisión por esas búsquedas, pon tus datos en el bloque `BUSQUEDA_
 
 Mostrar los productos de las tiendas dentro de tu web, en vivo, necesita las API de cada tienda y un pequeño servidor que guarde tus claves; se puede añadir cuando tengas las cuentas aprobadas.
 
+## Confianza, urgencia, alertas y comunidad
+
+- **Etiquetas en cada oferta** (campos opcionales en `productos.js`): `verificado: true` muestra «Verificada»; `publicado: "AAAA-MM-DD"` muestra «Nueva» durante 2 días; `termina: "AAAA-MM-DD"` muestra «Termina en…» y oculta la oferta cuando pasa la fecha.
+- **Alertas**: el visitante busca algo y pulsa «Avísame». Al volver, la campana de la cabecera cuenta las ofertas nuevas que coinciden. Se guardan en su navegador (sin correo ni registro).
+- **App instalable**: `manifest.webmanifest`, `sw.js` y los iconos permiten instalar la web en el móvil. Solo funciona con la web publicada en https.
+- **Votos y comentarios** (Supabase): ejecuta `supabase db push` (aplica `supabase/migrations/20261023000000_comunidad.sql`) o pega ese archivo en el SQL Editor de Supabase, y pon la URL y la clave pública "anon" en el bloque `SUPABASE` al principio de `app.js`. Mientras esté vacío, no se muestran. Para ocultar un comentario, marca `oculto` en la tabla `comentarios`.
+
 ## Google AdSense
 
 1. En `index.html`, quita los comentarios de la línea `adsbygoogle.js` del `<head>` y pon tu `ca-pub-...`.

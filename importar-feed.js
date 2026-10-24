@@ -23,6 +23,7 @@ const COLUMNAS = {
   precio:         ["precio", "sale price", "sale_price", "current price", "price"],
   precioAnterior: ["precioanterior", "original price", "list price", "retail price", "msrp", "price"],
   imagenes:       ["imagenes", "image url", "image_link", "image link", "imageurl", "additional image link", "additional_image_link", "image urls"],
+  marca:          ["marca", "brand", "manufacturer"],
   enlace:         ["enlace", "affiliate url", "buy url", "click url", "link", "aw_deep_link", "tracking url", "url"]
 };
 
@@ -68,6 +69,7 @@ function convertir(archivo) {
       precio, precioAnterior: anterior,
       imagenes: [...new Set(imagenes)],
       enlace: v("enlace"),
+      ...(v("marca") ? { marca: v("marca") } : {}),
       actualizado: hoy
     };
   }).filter((p) => p.titulo && p.precio !== null && p.enlace);
