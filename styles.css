@@ -850,3 +850,25 @@ main > .block:first-of-type { margin-top: clamp(40px, 5vw, 72px); padding-top: 0
 .ava-edit .ava-grid { grid-template-columns: repeat(4, 1fr); }
 .ava-edit .ava-op[aria-pressed="true"] { background: var(--wash); border-color: transparent; }
 .ava-edit .ava-op:hover { background: var(--mist); border-color: transparent; }
+
+/* ===== Cabecera en el móvil: logo + idioma + campana + modo + cuenta en una sola fila ===== */
+@media (max-width: 640px) {
+  .top-row { gap: 10px 6px; }
+  .top-row .lang, .top-row .bell, .top-row #tema { margin-right: 0; }
+  .logo { min-width: 0; flex: 0 1 auto; gap: 8px; margin-right: auto; }
+  .logo span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lang { margin-left: 0; }
+}
+@media (max-width: 480px) {
+  .logo { font-size: 0.9375rem; }
+  .logo-mark { width: 26px; height: 26px; }
+  /* Idioma: un solo botón con el idioma al que se cambia */
+  .lang { padding: 0; border: 0; }
+  .lang button[aria-pressed="true"] { display: none; }
+  .lang button, .theme { width: 40px; min-width: 40px; height: 40px; min-height: 40px; }
+  .lang button { border: var(--line); border-radius: var(--r); font-size: var(--step-small); }
+}
+/* Móviles muy estrechos (320–360 px): el logo queda solo con el icono para que todo quepa */
+@media (max-width: 360px) {
+  .logo > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
