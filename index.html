@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Radar de Ofertas · rebajas de 8 tiendas comparadas</title>
 <meta name="description" content="Las mejores ofertas de Amazon, Walmart, Target, Best Buy, eBay, Etsy, Temu y AliExpress en un solo lugar, con precio, descuento y fotos de cada producto.">
-<meta name="theme-color" content="#0a0a0a">
+<meta name="theme-color" content="#ffffff">
 <script>document.documentElement.classList.add("js");</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600&display=swap">
-<link rel="stylesheet" href="styles.css?v=20261019q">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500&display=swap">
+<link rel="stylesheet" href="styles.css?v=20261023a">
 
 <!-- GOOGLE ADSENSE: cuando Google apruebe tu web, quita los comentarios de la línea siguiente y pon tu ID ca-pub-... -->
 <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script> -->
@@ -42,6 +42,7 @@
 
 <main id="inicio">
   <section class="wrap hero" aria-labelledby="hero-title">
+    <p class="eyebrow" data-i18n="hero.eyebrow">Comparador de rebajas</p>
     <h1 class="lines" id="hero-title">
       <span class="line"><span data-line style="--i:0" data-i18n="hero.l1">Ocho tiendas,</span></span>
       <span class="line"><span data-line style="--i:1" data-i18n="hero.l2">un solo radar.</span></span>
@@ -49,7 +50,10 @@
     <div class="band" id="stores">
       <div class="band-intro">
         <p data-i18n="hero.lede">Las rebajas de Amazon, Walmart, Target, Best Buy, eBay, Etsy, Temu y AliExpress, comparadas precio a precio.</p>
-        <a class="btn" href="#catalogo" id="hero-cta">Ver todas las ofertas</a>
+        <div class="cta-pair">
+          <a class="btn" href="#catalogo" id="hero-cta">Ver todas las ofertas</a>
+          <a class="btn-ghost" href="#como-elegimos" data-i18n="hero.cta2">Cómo elegimos</a>
+        </div>
       </div>
       <div class="band-cats">
         <p class="grp" data-i18n="hero.byCat">Por categoría</p>
@@ -60,6 +64,7 @@
 
   <section class="wrap block showcase" id="destacadas" aria-labelledby="destacadas-title">
     <div class="show-side" data-in>
+      <p class="eyebrow" data-i18n="top.eyebrow">Destacadas</p>
       <h2 id="destacadas-title" data-i18n="top.title">Las rebajas más fuertes</h2>
       <div class="show-note" id="oferta-dia" aria-label="Oferta del día" data-i18n-attr="aria-label:top.dealAria"></div>
     </div>
@@ -74,6 +79,7 @@
   <section class="wrap block" id="catalogo" aria-labelledby="titulo">
     <div class="results-bar">
       <div>
+        <p class="eyebrow" data-i18n="deals.eyebrow">Catálogo</p>
         <h2 id="titulo">Todas las ofertas</h2>
         <p id="conteo"></p>
       </div>
@@ -126,6 +132,7 @@
 
   <section class="block moments" id="como-elegimos" aria-labelledby="como-title">
     <div class="wrap moments-head">
+      <p class="eyebrow" data-i18n="how.eyebrow">Método</p>
       <h2 id="como-title" data-i18n="how.title">Cómo elegimos las ofertas</h2>
     </div>
     <div class="wrap moments-grid">
@@ -188,8 +195,8 @@
 <dialog id="comparador" aria-label="Comparar productos" data-i18n-attr="aria-label:cmp.aria"></dialog>
 <!--/CUERPO-->
 
-<script src="i18n.js?v=20261019q"></script>
-<script src="productos.js?v=20261019q"></script>
-<script src="app.js?v=20261019q"></script>
+<script src="i18n.js?v=20261023a"></script>
+<script src="productos.js?v=20261023a"></script>
+<script src="app.js?v=20261023a"></script>
 </body>
 </html>
