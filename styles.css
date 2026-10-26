@@ -985,3 +985,6 @@ main > .block:first-of-type { margin-top: clamp(40px, 5vw, 72px); padding-top: 0
 .auth-form textarea { width: 100%; border: var(--line); border-radius: var(--r); background: var(--white); padding: 11px 12px; font-size: var(--step-body); font-weight: 400; color: var(--midnight); resize: vertical; }
 .auth-form select:focus, .auth-form textarea:focus { outline: none; border-color: var(--indigo); }
 @media (max-width: 640px) { #compartir { width: 100%; } }
+
+/* Espacio con anuncio real: sin recuadro ni texto de ejemplo */
+.ad.ad-on { display: block; padding: 0; background: none; border: 0; min-height: 0; }

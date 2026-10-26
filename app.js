@@ -5,6 +5,15 @@
   // Máximo de productos en el comparador
   const MAX_COMPARAR = 4;
 
+  /* GOOGLE ADSENSE
+     Crea en AdSense (Anuncios > Por bloque de anuncios) un anuncio «de display» por cada espacio
+     y pega aquí su número data-ad-slot. Mientras esté vacío, ese espacio muestra el recuadro «Publicidad».
+     Nunca se ponen anuncios dentro de la lista de productos. */
+  const ADSENSE = {
+    cliente: "ca-pub-6410047185817436",
+    bloques: { superior: "", lateral: "", inferior: "" }
+  };
+
   /* COMUNIDAD (votos y comentarios) con Supabase.
      Pon la URL de tu proyecto y su clave pública "anon" (Supabase > Project Settings > API).
      Si las dejas vacías, la web funciona igual pero sin votos ni comentarios. */
@@ -1487,7 +1496,20 @@
     });
   })();
 
+  /* Coloca los anuncios configurados en ADSENSE dentro de sus espacios */
+  function ponerAnuncios() {
+    Object.entries(ADSENSE.bloques).forEach(([sitio, slot]) => {
+      const caja = $("#ad-" + sitio);
+      if (!caja || !/^\d{6,}$/.test(String(slot).trim()) || caja.dataset.puesto) return;
+      caja.dataset.puesto = "1";
+      caja.classList.add("ad-on");
+      caja.innerHTML = `<ins class="adsbygoogle" style="display:block" data-ad-client="${ADSENSE.cliente}" data-ad-slot="${String(slot).trim()}" data-ad-format="auto" data-full-width-responsive="true"></ins>`;
+      try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) { console.error(e); }
+    });
+  }
+
   safe(() => i18n.apply());
+  safe(ponerAnuncios);
   safe(pintarPortada); safe(entradas); safe(pintarTiendasPortada); safe(pintarCategorias); safe(pintarTiendasFiltro); safe(pintarRango); safe(pintarMenus); safe(pintarEvento); safe(pintar); safe(pintarBarraComparar); safe(pintarCampana);
   if (COMUNIDAD) cargarVotos().catch((e) => console.error(e));
 })();

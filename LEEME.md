@@ -68,8 +68,11 @@ Mostrar los productos de las tiendas dentro de tu web, en vivo, necesita las API
 
 ## Google AdSense
 
-1. En `index.html`, quita los comentarios de la línea `adsbygoogle.js` del `<head>` y pon tu `ca-pub-...`.
-2. Sustituye el contenido de cada caja gris (`ad-superior`, `ad-lateral`, `ad-inferior`) por el bloque `<ins class="adsbygoogle" ...></ins>` que te da AdSense, seguido de `<script>(adsbygoogle = window.adsbygoogle || []).push({});</script>`.
+Tu código de AdSense (`ca-pub-6410047185817436`) ya está en el `<head>` de `index.html`, y `ads.txt` está creado.
+
+1. **Bloques de anuncio**: en AdSense, ve a *Anuncios > Por bloque de anuncios* y crea un anuncio **de display** para cada espacio (superior, lateral e inferior). Copia su número `data-ad-slot` y pégalo en el bloque `ADSENSE` al principio de `app.js`. Hasta entonces, cada espacio enseña el recuadro «Publicidad».
+2. **Sin anuncios entre productos**: la web nunca pone anuncios dentro de la lista. En AdSense, en *Anuncios > Por sitio*, desactiva los **anuncios automáticos** (o al menos los anuncios «in-page»), porque si están activos Google decide solo dónde ponerlos y podría meterlos entre productos.
+3. **ads.txt**: Google lo busca en la raíz del dominio (`tudominio.com/ads.txt`). Con un dominio propio funciona tal cual. En `haroldcampi.github.io/WebDescuentos/` no está en la raíz: tendría que ir en un repositorio llamado `haroldcampi.github.io`.
 
 Google exige contenido propio además de los productos para aprobar la web; conviene añadir guías o reseñas.
 
