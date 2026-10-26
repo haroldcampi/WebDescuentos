@@ -872,3 +872,30 @@ main > .block:first-of-type { margin-top: clamp(40px, 5vw, 72px); padding-top: 0
 @media (max-width: 360px) {
   .logo > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 }
+
+/* ===== Pie: los enlaces llenan su columna como botones ===== */
+.t-statement { grid-column: 1 / span 7; }
+.t-word { grid-column: 1 / span 7; }
+.t-nav, .t-go { grid-column: 8 / -1; }
+.t-nav { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: minmax(64px, 1fr); gap: 8px; align-self: stretch; }
+.t-nav a, .t-nav .linkbtn { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: auto; min-height: 64px; padding: 14px 18px;
+  border: var(--line); border-radius: var(--r); background: var(--white); color: var(--midnight); font-size: var(--step-small); font-weight: 400; text-decoration: none; text-align: left;
+  transition: border-color .2s ease, color .2s ease, background-color .2s ease; }
+.t-nav a::after, .t-nav .linkbtn::after { content: "→"; color: var(--indigo); transition: transform .2s var(--ease-out); }
+.t-nav a:hover, .t-nav .linkbtn:hover { border-color: var(--lavender); color: var(--indigo); }
+.t-nav a:hover::after, .t-nav .linkbtn:hover::after { transform: translateX(3px); }
+.t-nav .linkbtn { background: var(--wash); border-color: var(--lilac); color: var(--indigo); }
+.t-nav .linkbtn::after { content: "↓"; }
+/* Sin el botón de instalar (3 enlaces), el último ocupa toda la fila para no dejar hueco */
+.t-nav:has(#instalar[hidden]) a:last-of-type { grid-column: 1 / -1; }
+@media (max-width: 1080px) {
+  .t-statement, .t-word, .t-nav, .t-go { grid-column: 1 / -1; }
+  .t-nav { grid-template-columns: repeat(4, 1fr); margin-top: 24px; }
+  .t-nav:has(#instalar[hidden]) { grid-template-columns: repeat(3, 1fr); }
+  .t-nav:has(#instalar[hidden]) a:last-of-type { grid-column: auto; }
+  .t-go { margin-top: 0; border-top: 0; padding-top: 8px; }
+}
+@media (max-width: 640px) {
+  .t-nav, .t-nav:has(#instalar[hidden]) { grid-template-columns: 1fr 1fr; }
+  .t-nav:has(#instalar[hidden]) a:last-of-type { grid-column: 1 / -1; }
+}
