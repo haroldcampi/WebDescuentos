@@ -2,8 +2,6 @@
 (function () {
   "use strict";
 
-  // Cada cuántos productos se intercala un anuncio en la rejilla
-  const ANUNCIO_CADA = 8;
   // Máximo de productos en el comparador
   const MAX_COMPARAR = 4;
 
@@ -153,8 +151,32 @@
   const precios = (p) => `<div class="price-row"><span class="price">${money.format(p.precio)}</span>${p.descuento ? `<span class="was">${money.format(p.precioAnterior)}</span>` : ""}</div>`;
   const CHECK = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
   const RELOJ = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>';
+  /* Historial de precios (campo «historial»): mínimo, máximo y media de los últimos 90 días,
+     y aviso de descuento dudoso cuando el «precio antes» no aparece en el historial */
+  function analisis(p) {
+    const h = (p.historial || []).filter((x) => Array.isArray(x) && x.length === 2 && typeof x[0] === "string" && isFinite(x[1]));
+    if (h.length < 4) return null;
+    const corte = new Date(Date.now() - 90 * DIA).toISOString().slice(0, 10);
+    const ult = h.filter((x) => x[0] >= corte), usa = ult.length >= 4 ? ult : h;
+    const precios = usa.map((x) => x[1]), previos = precios.slice(0, -1);
+    const min = Math.min(...precios), max = Math.max(...precios), media = precios.reduce((a, b) => a + b, 0) / precios.length;
+    return {
+      h: usa, min, max, media,
+      minimo: p.precio <= min + 0.005 && previos.some((v) => v > p.precio + 0.005),
+      dudoso: !!(p.precioAnterior && Math.max(...previos) < p.precioAnterior * 0.97)
+    };
+  }
+  const esErrorPrecio = (p) => !!p.errorPrecio || p.descuento >= 70;
+  const AVISO = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v4M12 17h.01"/></svg>';
+  const TIJERA = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><path d="M8 7.5 20 17M8 16.5 20 7"/></svg>';
+  const RAYO = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></svg>';
   function etiquetas(p) {
-    const q = quedan(p), f = [];
+    const q = quedan(p), f = [], an = analisis(p);
+    if (esErrorPrecio(p)) f.push(`<span class="flag ends hot" title="${esc(T("deal.errorTip"))}">${RAYO}${T("deal.error")}</span>`);
+    if (an?.minimo) f.push(`<span class="flag ok" title="${esc(T("hist.minTip"))}">${CHECK}${T("deal.min90")}</span>`);
+    if (an?.dudoso) f.push(`<span class="flag warn" title="${esc(T("hist.fakeTip"))}">${AVISO}${T("deal.fake")}</span>`);
+    if (p.cupon) f.push(`<span class="flag new">${TIJERA}${T("deal.coupon")}</span>`);
+    if (p.prime) f.push(`<span class="flag prime">Prime</span>`);
     if (p.verificado) f.push(`<span class="flag ok" title="${esc(T("deal.verifiedTip"))}">${CHECK}${T("deal.verified")}</span>`);
     if (esNueva(p)) f.push(`<span class="flag new">${T("deal.new")}</span>`);
     if (comunidad.enTendencia.has(p.id)) f.push(`<span class="flag trend"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>${T("deal.trending")}</span>`);
@@ -305,10 +327,6 @@
       </div>
     </article>`;
   }
-  function anuncioFeed(n) {
-    // Sustituye el contenido por tu bloque <ins class="adsbygoogle"> de anuncio "In-feed"
-    return `<div class="ad ad-feed" data-ad-slot-name="feed-${n}"><div><small>${T("ad.label")}</small>${T("ad.feed")}</div></div>`;
-  }
   function pintarEnTodas() {
     const box = $("#everywhere");
     const q = estado.q;
@@ -331,7 +349,6 @@
         if (i === 0 || claveGrupo(listaActual[i - 1]) !== g) partes.push(`<h3 class="group-head">${estado.grupo === "categoria" ? icono(g) : estado.grupo === "tienda" ? marcaTienda(g) : ""}<span>${esc(nombreGrupo(g))}</span><span class="n">${cuentaGrupos.get(g) || ""}</span></h3>`);
       }
       partes.push(tarjeta(p));
-      if ((i + 1) % ANUNCIO_CADA === 0 && i < listaActual.length - 1) partes.push(anuncioFeed((i + 1) / ANUNCIO_CADA));
     });
     return partes.join("");
   }
@@ -374,6 +391,100 @@
     document.querySelectorAll("#stores [data-cat]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.cat === estado.categoria));
   }
 
+  /* Cupón, oferta relámpago (% reclamado) y cuenta atrás en la ficha */
+  function extrasFicha(p) {
+    const partes = [];
+    if (p.cupon) {
+      const c = typeof p.cupon === "string" ? { texto: p.cupon } : p.cupon;
+      partes.push(`<div class="coupon">${TIJERA}<span>${esc(c.texto || T("deal.coupon"))}</span>${c.codigo ? `<button class="coupon-code" type="button" data-copiar="${esc(c.codigo)}" aria-label="${esc(T("coupon.copyX", { c: c.codigo }))}"><code>${esc(c.codigo)}</code><span>${T("coupon.copy")}</span></button>` : ""}</div>`);
+    }
+    if (p.prime) partes.push(`<p class="prime-note"><span class="flag prime">Prime</span> ${T("deal.primeTip")}</p>`);
+    const fin = finDe(p), ms = fin - Date.now();
+    if (fin && ms > 0 && ms < 2 * DIA) partes.push(`<p class="countdown">${RELOJ}<span>${T("deal.endsIn")}</span> <b data-cuenta-atras="${fin}">${cuentaAtras(ms)}</b></p>`);
+    if (isFinite(p.reclamado) && p.reclamado > 0) {
+      const v = Math.min(100, Math.max(0, Math.round(p.reclamado)));
+      partes.push(`<div class="claimed"><div class="claimed-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${v}" aria-label="${esc(T("deal.claimed", { n: v }))}"><i style="width:${v}%"></i></div><span>${RAYO}${T("deal.claimed", { n: v })}</span></div>`);
+    }
+    return partes.join("");
+  }
+  function cuentaAtras(ms) {
+    const t = Math.max(0, Math.floor(ms / 1000)), h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), sg = t % 60;
+    return `${h}:${String(m).padStart(2, "0")}:${String(sg).padStart(2, "0")}`;
+  }
+  setInterval(() => { document.querySelectorAll("[data-cuenta-atras]").forEach((el) => { el.textContent = cuentaAtras(+el.dataset.cuentaAtras - Date.now()); }); }, 1000);
+
+  /* Gráfica del historial de precios: una sola línea escalonada (el precio cambia a saltos),
+     rejilla discreta, mínimo marcado, línea del «precio antes» y lectura al pasar el ratón */
+  function graficaHistorial(p) {
+    const an = analisis(p); if (!an) return "";
+    const W = 640, H = 220, L = 0, Rm = 0, Tp = 14, B = 28; // el SVG ocupa solo la zona de la línea; las etiquetas van fuera
+    const t0 = new Date(an.h[0][0]).getTime(), t1 = new Date(an.h[an.h.length - 1][0]).getTime() || t0 + 1;
+    const valores = an.h.map((x) => x[1]).concat(p.precioAnterior ? [p.precioAnterior] : []);
+    let lo = Math.min(...valores), hi = Math.max(...valores); const pad = (hi - lo) * 0.12 || hi * 0.1 || 1; lo = Math.max(0, lo - pad); hi += pad;
+    const X = (d) => L + ((new Date(d).getTime() - t0) / Math.max(1, t1 - t0)) * (W - L - Rm);
+    const Y = (v) => Tp + (1 - (v - lo) / (hi - lo)) * (H - Tp - B);
+    let d = ""; an.h.forEach((x, i) => { d += i ? `H${X(x[0]).toFixed(1)}V${Y(x[1]).toFixed(1)}` : `M${X(x[0]).toFixed(1)},${Y(x[1]).toFixed(1)}`; });
+    const marcas = [lo + (hi - lo) * 0.15, lo + (hi - lo) * 0.5, lo + (hi - lo) * 0.85];
+    // Las etiquetas van en HTML encima del SVG: así no se deforman al estirar la gráfica a lo ancho
+    const pctY = (y) => (y / H) * 100;
+    const posX = (x) => `calc(var(--g-l) + (100% - var(--g-l) - var(--g-r)) * ${(x / W).toFixed(4)})`;
+    const rejilla = marcas.map((v) => `<line x1="${L}" x2="${W - Rm}" y1="${Y(v)}" y2="${Y(v)}" class="g-grid"/>`).join("");
+    const etiquetasY = marcas.map((v) => `<span class="g-lab g-y" style="top:${pctY(Y(v)).toFixed(2)}%">${money.format(v)}</span>`).join("");
+    const etiquetasX = [an.h[0], an.h[Math.floor(an.h.length / 2)], an.h[an.h.length - 1]].map((x, i) => `<span class="g-lab g-x g-x${i}" style="left:${posX(X(x[0]))}">${esc(fecha(x[0]))}</span>`).join("");
+    const iMin = an.h.findIndex((x) => x[1] === an.min), pm = an.h[iMin];
+    const antes = p.precioAnterior ? `<line x1="${L}" x2="${W - Rm}" y1="${Y(p.precioAnterior)}" y2="${Y(p.precioAnterior)}" class="g-ref"/>` : "";
+    const antesLab = p.precioAnterior ? `<span class="g-lab g-ref-lab" style="top:${pctY(Y(p.precioAnterior)).toFixed(2)}%">${T("hist.before", { p: money.format(p.precioAnterior) })}</span>` : "";
+    const ult = an.h[an.h.length - 1];
+    const tabla = `<table class="sr"><caption>${T("hist.title")}</caption><thead><tr><th>${T("hist.date")}</th><th>${T("cmp.price")}</th></tr></thead><tbody>${an.h.map((x) => `<tr><td>${esc(fecha(x[0]))}</td><td>${money.format(x[1])}</td></tr>`).join("")}</tbody></table>`;
+    return `<section class="hist" aria-labelledby="hist-title">
+      <div class="hist-head"><h3 id="hist-title">${T("hist.title")}</h3><span class="hist-sub">${T("hist.sub", { n: an.h.length })}</span></div>
+      ${an.dudoso ? `<p class="hist-alert warn">${AVISO}<span>${T("hist.fake", { p: money.format(p.precioAnterior), m: money.format(Math.max(...an.h.slice(0, -1).map((x) => x[1]))) })}</span></p>` : an.minimo ? `<p class="hist-alert ok">${CHECK}<span>${T("hist.isMin")}</span></p>` : ""}
+      <dl class="hist-stats">
+        <div><dt>${T("hist.now")}</dt><dd>${money.format(p.precio)}</dd></div>
+        <div><dt>${T("hist.min")}</dt><dd>${money.format(an.min)}</dd></div>
+        <div><dt>${T("hist.avg")}</dt><dd>${money.format(an.media)}</dd></div>
+        <div><dt>${T("hist.max")}</dt><dd>${money.format(an.max)}</dd></div>
+      </dl>
+      <div class="hist-chart" data-hist="${esc(p.id)}">
+        <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(T("hist.aria", { a: money.format(an.min), b: money.format(an.max), c: money.format(p.precio) }))}" preserveAspectRatio="none">
+          ${rejilla}${antes}
+          <path d="${d}" class="g-line"/>
+          <line class="g-cross" y1="${Tp}" y2="${H - B}" x1="-10" x2="-10"/>
+        </svg>
+        ${etiquetasY}${etiquetasX}${antesLab}
+        <span class="g-dot g-min" style="left:${posX(X(pm[0]))};top:${pctY(Y(pm[1])).toFixed(2)}%"></span>
+        <span class="g-dot g-now" style="left:${posX(X(ult[0]))};top:${pctY(Y(ult[1])).toFixed(2)}%"></span>
+        <div class="g-tip" hidden></div>
+      </div>${tabla}
+    </section>`;
+  }
+  // Lectura al pasar el ratón o el dedo por la gráfica: fecha y precio del punto más cercano
+  document.addEventListener("pointermove", (e) => {
+    const box = e.target.closest?.(".hist-chart"); if (!box) return;
+    const p = porId.get(box.dataset.hist), an = p && analisis(p); if (!an) return;
+    const svg = box.querySelector("svg"), r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal;
+    const x = Math.min(Math.max(0, (e.clientX - r.left) / r.width), 1) * vb.width;
+    const t0 = new Date(an.h[0][0]).getTime(), t1 = new Date(an.h[an.h.length - 1][0]).getTime();
+    const t = t0 + (x / vb.width) * (t1 - t0);
+    let i = an.h.length - 1; while (i > 0 && new Date(an.h[i][0]).getTime() > t) i--;
+    const px = ((new Date(an.h[i][0]).getTime() - t0) / Math.max(1, t1 - t0)) * vb.width;
+    const cross = box.querySelector(".g-cross"); cross.setAttribute("x1", px); cross.setAttribute("x2", px);
+    const tip = box.querySelector(".g-tip"); tip.hidden = false;
+    tip.innerHTML = `<span>${esc(fecha(an.h[i][0]))}</span><b>${money.format(an.h[i][1])}</b>`;
+    const caja = box.getBoundingClientRect(), left = r.left - caja.left + (px / vb.width) * r.width;
+    tip.style.left = Math.min(Math.max(left, 60), caja.width - 60) + "px";
+  });
+  document.addEventListener("pointerleave", (e) => {
+    const box = e.target.closest?.(".hist-chart"); if (!box) return;
+    box.querySelector(".g-tip").hidden = true; const c = box.querySelector(".g-cross"); c.setAttribute("x1", -10); c.setAttribute("x2", -10);
+  }, true);
+  // Copiar el código del cupón
+  document.addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-copiar]"); if (!b) return;
+    try { await navigator.clipboard.writeText(b.dataset.copiar); } catch (er) { const t = document.createElement("textarea"); t.value = b.dataset.copiar; document.body.appendChild(t); t.select(); document.execCommand("copy"); t.remove(); }
+    const sp = b.querySelector("span"); sp.textContent = T("coupon.copied"); setTimeout(() => { sp.textContent = T("coupon.copy"); }, 1600);
+  });
+
   /* Ficha del producto */
   let fotoActual = 0;
   function abrir(id) {
@@ -399,6 +510,8 @@
           ${estrellas(p)}
           <div>${precios(p)}${p.descuento ? `<span class="save">${T("sheet.saveFull", { a: money.format(p.ahorro), d: p.descuento })}</span>` : ""}</div>
           <div class="info-actions">${enlace(p, T("sheet.buyAt", { s: esc(p.tienda) }))}<button class="ghost" type="button" data-comparar="${esc(p.id)}" aria-pressed="${enComp}">${T(enComp ? "sheet.inCompare" : "card.compare")}</button>${botonesCuenta(p, true)}</div>
+          <div id="objetivo-box" data-id="${esc(p.id)}">${cajaObjetivo(p.id)}</div>
+          ${extrasFicha(p)}
           ${votos(p, true)}
           <dl class="facts">
             <dt>${T("sheet.store")}</dt><dd>${esc(p.tienda)}</dd>
@@ -408,6 +521,7 @@
           </dl>
           <p class="disclaimer">${T("sheet.disclaimer", { d: esc(fecha(p.actualizado)), s: esc(p.tienda) })}</p>
         </div>
+        ${graficaHistorial(p)}
         ${COMUNIDAD ? `<section class="comments" id="comentarios" aria-labelledby="com-title"><h3 id="com-title">${T("com.title")}</h3>
           <div class="com-box" id="com-box" data-id="${esc(p.id)}">${cajaComentar(p.id)}</div>
           <div class="com-list" id="com-list"><p class="com-note">${T("com.loading")}</p></div></section>` : ""}
@@ -804,7 +918,7 @@
     removeItem(k) { try { localStorage.removeItem(k); sessionStorage.removeItem(k); } catch (e) {} }
   };
   const sb = COMUNIDAD && window.supabase ? window.supabase.createClient(SUPABASE.url, SUPABASE.clave, { auth: { flowType: "pkce", persistSession: true, detectSessionInUrl: true, storage: almacen } }) : null;
-  const cuenta = { usuario: null, favoritos: new Set(), seguidos: new Map(), pendiente: null };
+  const cuenta = { usuario: null, favoritos: new Set(), seguidos: new Map(), objetivos: new Map(), pendiente: null };
   const CORAZON = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.3a4.3 4.3 0 0 1 7.5 2.5C19.5 15.4 12 20 12 20Z"/></svg>';
   const CAMPANA = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15L6 16ZM10 20.5a2 2 0 0 0 4 0"/></svg>';
   const LOGO_GOOGLE = '<svg viewBox="0 0 18 18" width="18" height="18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62Z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18Z"/><path fill="#FBBC05" d="M3.97 10.72A5.4 5.4 0 0 1 3.68 9c0-.6.1-1.18.29-1.72V4.95H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.05l3.01-2.33Z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58Z"/></svg>';
@@ -819,8 +933,29 @@
       <button class="act" type="button" data-fav="${esc(p.id)}" aria-pressed="${fav}" aria-label="${esc(T(fav ? "fav.on" : "fav.add"))}" title="${esc(T(fav ? "fav.on" : "fav.add"))}">${CORAZON}</button>
       <button class="act" type="button" data-seguir="${esc(p.id)}" aria-pressed="${seg}" aria-label="${esc(T(seg ? "follow.on" : "follow.add"))}" title="${esc(T(seg ? "follow.on" : "follow.add"))}">${CAMPANA}</button></div>`;
   }
+  /* «Avísame si baja de $X»: precio objetivo de un producto seguido */
+  function cajaObjetivo(id) {
+    if (!sb || !cuenta.usuario || !cuenta.seguidos.has(id)) return "";
+    const p = porId.get(id), obj = cuenta.objetivos.get(id);
+    return `<form class="target" id="target-form" data-id="${esc(id)}"><label for="target-v">${T("target.label")}</label>
+      <span class="target-in"><span aria-hidden="true">$</span><input id="target-v" name="v" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="${esc((p.precio * 0.9).toFixed(2))}" value="${obj ? obj.toFixed(2) : ""}"></span>
+      <button class="btn-ghost" type="submit">${T("target.save")}</button><span class="target-msg" role="status">${obj ? T("target.active", { o: money.format(obj) }) : T("target.hint")}</span></form>`;
+  }
+  function pintarObjetivo() { const b = $("#objetivo-box"); if (b) b.innerHTML = cajaObjetivo(b.dataset.id); }
+  document.addEventListener("submit", async (e) => {
+    const f = e.target.closest("#target-form"); if (!f) return;
+    e.preventDefault();
+    const id = f.dataset.id, txt = f.v.value.trim(), v = txt ? parseFloat(txt.replace(",", ".")) : null, msg = f.querySelector(".target-msg");
+    if (txt && !(v > 0)) { msg.textContent = T("target.bad"); return; }
+    const r = await sb.from("seguidos").update({ precio_objetivo: v }).eq("producto_id", id);
+    if (r.error) { console.error(r.error); msg.textContent = T("auth.err.generic"); return; }
+    v ? cuenta.objetivos.set(id, v) : cuenta.objetivos.delete(id);
+    msg.textContent = v ? T("target.active", { o: money.format(v) }) : T("target.hint");
+    pintarCampana();
+  });
   // Repinta los corazones y campanas ya dibujados sin volver a pintar toda la rejilla
   function pintarBotonesCuenta() {
+    pintarObjetivo();
     document.querySelectorAll("[data-fav]").forEach((b) => {
       const on = cuenta.favoritos.has(b.dataset.fav), txt = T(on ? "fav.on" : "fav.add");
       b.setAttribute("aria-pressed", on);
@@ -934,13 +1069,14 @@
     if (cuenta.usuario) {
       const [f, sg, pf] = await Promise.all([
         sb.from("favoritos").select("producto_id"),
-        sb.from("seguidos").select("producto_id,precio_visto"),
+        sb.from("seguidos").select("producto_id,precio_visto,precio_objetivo"),
         sb.from("perfiles").select("usuario,avatar").eq("id", cuenta.usuario.id).maybeSingle()
       ]);
       cuenta.perfil = pf.data?.usuario || null;
       cuenta.avatar = pf.data?.avatar ? limpiarAvatar(pf.data.avatar) : null;
       (f.data || []).forEach((r) => cuenta.favoritos.add(r.producto_id));
-      (sg.data || []).forEach((r) => cuenta.seguidos.set(r.producto_id, Number(r.precio_visto)));
+      cuenta.objetivos = new Map();
+      (sg.data || []).forEach((r) => { cuenta.seguidos.set(r.producto_id, Number(r.precio_visto)); if (r.precio_objetivo) cuenta.objetivos.set(r.producto_id, Number(r.precio_objetivo)); });
       if (cuenta.perfil || !comunidad.nombre) comunidad.nombre = nombreUsuario(cuenta.usuario);
     }
     pintarCuenta(); pintarBotonesCuenta(); pintarCampana(); pintarCajaComentar();
@@ -960,6 +1096,7 @@
       <button type="button" data-acct="perfil">${miAvatar("ava-xs")}${T("acct.profile")}</button>
       <button type="button" data-acct="favs">${CORAZON}${T("acct.favsN", { n: cuenta.favoritos.size })}</button>
       <button type="button" data-acct="alerts">${CAMPANA}${T("acct.alerts")}</button>
+      <button type="button" data-compartir>${MAS}${T("share.menu")}</button>
       <button type="button" data-acct="logout">${T("acct.logout")}</button>` : "";
   }
   function pedirCuenta(motivo, accion) { cuenta.pendiente = accion || null; abrirAcceso("crear", motivo); }
@@ -977,13 +1114,17 @@
     if (!cuenta.usuario) return pedirCuenta("auth.reasonFollow", () => alternarSeguir(id));
     const p = porId.get(id); if (!p) return;
     const on = cuenta.seguidos.has(id), antes = cuenta.seguidos.get(id);
-    on ? cuenta.seguidos.delete(id) : cuenta.seguidos.set(id, p.precio);
+    on ? (cuenta.seguidos.delete(id), cuenta.objetivos.delete(id)) : cuenta.seguidos.set(id, p.precio);
     pintarBotonesCuenta(); pintarCampana(); if ($("#alertas").open) pintarAlertas();
     const r = on ? await sb.from("seguidos").delete().eq("producto_id", id) : await sb.from("seguidos").insert({ producto_id: id, precio_visto: p.precio });
     if (r.error && r.error.code !== "23505") { console.error(r.error); on ? cuenta.seguidos.set(id, antes) : cuenta.seguidos.delete(id); pintarBotonesCuenta(); pintarCampana(); alert(T("auth.err.generic")); }
   }
   // Productos seguidos cuyo precio actual es menor que el que vio el usuario
-  const bajadas = () => [...cuenta.seguidos].filter(([id, visto]) => { const p = porId.get(id); return p && p.precio < visto - 0.005; }).map(([id]) => id);
+  // Con precio objetivo, solo avisa al llegar a ese precio; sin objetivo, avisa de cualquier bajada
+  const bajadas = () => [...cuenta.seguidos].filter(([id, visto]) => {
+    const p = porId.get(id); if (!p || !(p.precio < visto - 0.005)) return false;
+    const obj = cuenta.objetivos.get(id); return !obj || p.precio <= obj + 0.005;
+  }).map(([id]) => id);
   async function marcarSeguidoVisto(id) {
     const p = porId.get(id); if (!p || !cuenta.seguidos.has(id) || cuenta.seguidos.get(id) === p.precio) return;
     cuenta.seguidos.set(id, p.precio); pintarCampana();
@@ -998,7 +1139,8 @@
     ids.sort((a, b) => baj.has(b) - baj.has(a));
     return `<ul class="alerts-list">${ids.map((id) => {
       const p = porId.get(id), visto = cuenta.seguidos.get(id);
-      const estadoTxt = baj.has(id) ? T("follow.drop", { a: money.format(visto), b: money.format(p.precio) }) : p.precio > visto ? T("follow.up", { b: money.format(p.precio) }) : T("follow.same", { b: money.format(p.precio) });
+      const obj = cuenta.objetivos.get(id);
+      const estadoTxt = (baj.has(id) && obj ? T("target.reached", { b: money.format(p.precio), o: money.format(obj) }) + " · " : "") + (baj.has(id) ? T("follow.drop", { a: money.format(visto), b: money.format(p.precio) }) : obj ? T("target.waiting", { o: money.format(obj), b: money.format(p.precio) }) : p.precio > visto ? T("follow.up", { b: money.format(p.precio) }) : T("follow.same", { b: money.format(p.precio) }));
       return `<li><img class="alerts-ph" src="${esc(p.imagenes[0])}" alt=""><div><b>${esc(TIT(p))}</b><span class="${baj.has(id) ? "fresh" : ""}">${estadoTxt}</span></div>
         <button class="btn-ghost" type="button" data-ver-seguido="${esc(id)}">${T("follow.view")}</button>
         <button class="linkbtn" type="button" data-dejar-seguir="${esc(id)}" aria-label="${esc(T("follow.stopX", { t: TIT(p) }))}">${T("follow.stop")}</button></li>`;
@@ -1222,6 +1364,7 @@
     if (prev) pintarEditorAvatar();
     const f = $("#ficha"); if (f.open && f.dataset.id && $("#com-list")) safe(() => cargarComentarios(f.dataset.id));
   });
+  if (sb) $("#compartir-cta").hidden = false;
   if (sb) {
     pintarCuenta();
     sb.auth.onAuthStateChange((evento, sesion) => {
@@ -1243,6 +1386,69 @@
     });
   }
 
+  /* ===== Grandes eventos de rebajas: cuenta atrás en una franja bajo la cabecera =====
+     Añade aquí los eventos que quieras (Prime Day, Back to School…). Se muestra el próximo en los 60 días previos. */
+  const EVENTOS = [
+    { nombre: "Black Friday", fecha: "2026-11-27" },
+    { nombre: "Cyber Monday", fecha: "2026-11-30" }
+  ];
+  function pintarEvento() {
+    const caja = $("#evento"); if (!caja) return;
+    const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+    const ev = EVENTOS.map((e) => ({ ...e, t: new Date(e.fecha + "T00:00:00") })).filter((e) => e.t >= hoy && (e.t - hoy) / DIA <= 60).sort((a, b) => a.t - b.t)[0];
+    let cerrado = false; try { cerrado = ev && localStorage.getItem("radar-evento-cerrado") === ev.fecha; } catch (e) {}
+    if (!ev || cerrado) { caja.hidden = true; return; }
+    const dias = Math.round((ev.t - hoy) / DIA);
+    caja.innerHTML = `<div class="wrap event-row">
+      <p><b>${dias === 0 ? T("event.today", { e: esc(ev.nombre) }) : dias === 1 ? T("event.tomorrow", { e: esc(ev.nombre) }) : T("event.in", { e: esc(ev.nombre), n: dias })}</b> <span>${T("event.tip")}</span></p>
+      <button class="btn-ghost event-btn" type="button" data-evento-alertas>${CAMPANA}${T("event.cta")}</button>
+      <button class="event-x" type="button" data-evento-cerrar="${esc(ev.fecha)}" aria-label="${esc(T("sheet.close"))}">×</button></div>`;
+    caja.hidden = false;
+  }
+  document.addEventListener("click", (e) => {
+    const x = e.target.closest("[data-evento-cerrar]");
+    if (x) { try { localStorage.setItem("radar-evento-cerrado", x.dataset.eventoCerrar); } catch (er) {} $("#evento").hidden = true; return; }
+    if (e.target.closest("[data-evento-alertas]")) { if (sb && !cuenta.usuario) return pedirCuenta("auth.reasonFollow"); $("#campana").click(); }
+  });
+
+  /* ===== Comparte una oferta (comunidad). Se guarda como «pendiente» y la revisas antes de publicarla ===== */
+  function abrirCompartir() {
+    if (!sb) return;
+    if (!cuenta.usuario) return pedirCuenta("share.reason", abrirCompartir);
+    const tiendas = Object.keys(TIENDAS).map((t) => `<option>${esc(t)}</option>`).join("") + `<option value="Otra">${T("share.other")}</option>`;
+    const d = $("#compartir");
+    d.innerHTML = `<button class="close" type="button" aria-label="${T("sheet.close")}" data-cerrar>×</button>
+      <div class="auth-wrap"><h2>${T("share.title")}</h2><p class="auth-tag">${T("share.intro")}</p>
+      <form class="auth-form" id="share-form" novalidate>
+        <label class="fld"><span class="fld-lab">${T("share.url")}</span><input name="url" type="url" required placeholder="https://"></label>
+        <label class="fld"><span class="fld-lab">${T("share.name")}</span><input name="titulo" required maxlength="140" placeholder="${esc(T("share.namePh"))}"></label>
+        <div class="fld-2"><label class="fld"><span class="fld-lab">${T("share.store")}</span><select name="tienda" required>${tiendas}</select></label>
+          <label class="fld"><span class="fld-lab">${T("share.coupon")}</span><input name="cupon" maxlength="60" placeholder="${esc(T("share.couponPh"))}"></label></div>
+        <div class="fld-2"><label class="fld"><span class="fld-lab">${T("share.price")}</span><input name="precio" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></label>
+          <label class="fld"><span class="fld-lab">${T("share.before")}</span><input name="antes" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></label></div>
+        <label class="fld"><span class="fld-lab">${T("share.note")}</span><textarea name="nota" maxlength="500" rows="3" placeholder="${esc(T("share.notePh"))}"></textarea></label>
+        <p class="auth-msg" id="share-msg" role="status"></p>
+        <button class="btn auth-submit" type="submit">${T("share.send")}</button>
+      </form></div>`;
+    if (!d.open) d.showModal();
+    setTimeout(() => d.querySelector("input")?.focus(), 50);
+  }
+  document.addEventListener("click", (e) => { if (e.target.closest("[data-compartir]")) { cerrarMenuCuenta?.(); abrirCompartir(); } });
+  document.addEventListener("submit", async (e) => {
+    const f = e.target.closest("#share-form"); if (!f) return;
+    e.preventDefault();
+    const msg = $("#share-msg"), btn = f.querySelector('button[type="submit"]'), num = (v) => (v.trim() ? parseFloat(v.replace(",", ".")) : null);
+    const datos = { url: f.url.value.trim(), titulo: f.titulo.value.trim(), tienda: f.tienda.value, precio: num(f.precio.value), precio_antes: num(f.antes.value), cupon: f.cupon.value.trim() || null, nota: f.nota.value.trim() || null };
+    msg.className = "auth-msg";
+    if (!/^https:\/\/\S+\.\S+/.test(datos.url)) { msg.textContent = T("share.badUrl"); return f.url.focus(); }
+    if (datos.titulo.length < 3) { msg.textContent = T("share.badName"); return f.titulo.focus(); }
+    btn.disabled = true; msg.textContent = T("auth.wait");
+    const { error } = await sb.from("ofertas_enviadas").insert(datos);
+    btn.disabled = false;
+    if (error) { console.error(error); msg.textContent = /demasiadas/.test(error.message) ? T("share.limit") : T("auth.err.generic"); return; }
+    f.reset(); msg.className = "auth-msg ok"; msg.textContent = T("share.thanks");
+  });
+
   /* ===== App instalable (PWA) ===== */
   if ("serviceWorker" in navigator && location.protocol === "https:") {
     addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch((e) => console.error(e)));
@@ -1258,7 +1464,7 @@
     const f = $("#ficha"), c = $("#comparador");
     if (f.open && f.dataset.id) safe(() => abrir(f.dataset.id));
     if (c.open) safe(abrirComparador);
-    safe(pintarCampana);
+    safe(pintarCampana); safe(pintarEvento);
     if ($("#alertas").open) safe(pintarAlertas);
     if (sb) safe(pintarCuenta);
     if ($("#acceso").open) safe(() => pintarAcceso());
@@ -1282,6 +1488,6 @@
   })();
 
   safe(() => i18n.apply());
-  safe(pintarPortada); safe(entradas); safe(pintarTiendasPortada); safe(pintarCategorias); safe(pintarTiendasFiltro); safe(pintarRango); safe(pintarMenus); safe(pintar); safe(pintarBarraComparar); safe(pintarCampana);
+  safe(pintarPortada); safe(entradas); safe(pintarTiendasPortada); safe(pintarCategorias); safe(pintarTiendasFiltro); safe(pintarRango); safe(pintarMenus); safe(pintarEvento); safe(pintar); safe(pintarBarraComparar); safe(pintarCampana);
   if (COMUNIDAD) cargarVotos().catch((e) => console.error(e));
 })();

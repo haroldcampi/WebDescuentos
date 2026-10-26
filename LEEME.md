@@ -58,11 +58,18 @@ Mostrar los productos de las tiendas dentro de tu web, en vivo, necesita las API
 - **App instalable**: `manifest.webmanifest`, `sw.js` y los iconos permiten instalar la web en el móvil. Solo funciona con la web publicada en https.
 - **Votos y comentarios** (Supabase): ejecuta `supabase db push` (aplica `supabase/migrations/20261023000000_comunidad.sql`) o pega ese archivo en el SQL Editor de Supabase, y pon la URL y la clave pública "anon" en el bloque `SUPABASE` al principio de `app.js`. Mientras esté vacío, no se muestran. Para ocultar un comentario, marca `oculto` en la tabla `comentarios`.
 
+## Historial de precios, cupones y ofertas de la comunidad
+
+- **Historial de precios**: cada producto puede llevar `historial` (lista de fechas y precios). La ficha muestra la gráfica, el mínimo, la media y el máximo de 90 días, la etiqueta «Mínimo en 90 días» y avisa de **descuentos dudosos** cuando el «precio antes» no aparece en el historial. `importar-feed.js` lo va completando solo: ejecútalo cada día y guardará hasta 180 días.
+- **Campos opcionales nuevos** en `productos.js`: `cupon`, `prime`, `reclamado` (% vendido en ofertas relámpago) y `errorPrecio`. Las ofertas con 70 % o más se marcan solas como «Posible error de precio».
+- **Alerta con precio objetivo**: quien sigue un producto puede poner «Avísame si baja de $X».
+- **Eventos**: la franja de Black Friday y Cyber Monday sale sola en los 60 días previos. Añade o cambia eventos en el bloque `EVENTOS` de `app.js`.
+- **Ofertas de la comunidad**: lo que envían los usuarios llega a Supabase, tabla `ofertas_enviadas`, con estado `pendiente`. Revísalas allí; si una es buena, añádela a `productos.js` y cambia su estado a `publicada` (o `rechazada`).
+
 ## Google AdSense
 
 1. En `index.html`, quita los comentarios de la línea `adsbygoogle.js` del `<head>` y pon tu `ca-pub-...`.
 2. Sustituye el contenido de cada caja gris (`ad-superior`, `ad-lateral`, `ad-inferior`) por el bloque `<ins class="adsbygoogle" ...></ins>` que te da AdSense, seguido de `<script>(adsbygoogle = window.adsbygoogle || []).push({});</script>`.
-3. El anuncio intercalado entre productos está en `app.js`, función `anuncioFeed` (cada 8 productos; cámbialo en `ANUNCIO_CADA`).
 
 Google exige contenido propio además de los productos para aprobar la web; conviene añadir guías o reseñas.
 

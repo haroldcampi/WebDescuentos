@@ -79,5 +79,22 @@ const archivos = process.argv.slice(2);
 if (!archivos.length) { console.log("Uso: node importar-feed.js feed1.csv [feed2.csv ...]"); process.exit(1); }
 const todos = archivos.flatMap(convertir);
 const salida = path.join(__dirname, "productos.js");
+
+/* Historial de precios: se conserva el de la versión anterior de productos.js y se añade el precio de hoy.
+   Así, ejecutando este script cada día, la web va teniendo su gráfica de precios (hasta 180 días). */
+function historialAnterior() {
+  try {
+    const caja = { window: {} };
+    require("vm").runInNewContext(fs.readFileSync(salida, "utf8"), caja);
+    return new Map((caja.window.PRODUCTOS || []).map((p) => [p.id, p.historial || []]));
+  } catch (e) { return new Map(); }
+}
+const previos = historialAnterior();
+const limite = new Date(Date.now() - 180 * 864e5).toISOString().slice(0, 10);
+for (const p of todos) {
+  const h = (previos.get(p.id) || []).filter((x) => Array.isArray(x) && x[0] >= limite && x[0] !== p.actualizado);
+  h.push([p.actualizado, p.precio]);
+  p.historial = h;
+}
 fs.writeFileSync(salida, `// Generado por importar-feed.js el ${new Date().toISOString()}\nwindow.PRODUCTOS = ${JSON.stringify(todos, null, 2)};\n`);
 console.log(`Listo: ${todos.length} productos guardados en ${salida}`);
