@@ -22,16 +22,18 @@ Abre `productos.js`, copia un bloque y cambia los datos. En `imagenes` pon las U
 
 Para traer todos los artículos con sus fotos y precios hay que usar la API o el feed oficial de cada programa. Copiar datos de las webs de las tiendas con un "scraper" va contra las condiciones de casi todos estos programas y te pueden cerrar la cuenta.
 
-| Tienda | Cómo se obtienen los productos |
-|---|---|
-| Amazon | API oficial de Amazon Associates (Product Advertising API). Amazon solo da acceso después de que tu cuenta tenga ventas calificadas. Revisa en tu panel de Associates la versión vigente de la API. Amazon pide mostrar la fecha y hora del precio y no guardar precios más de 24 h. |
-| Walmart, Target | Programa en Impact: descarga del catálogo de productos (CSV/FTP). |
-| Best Buy | API de productos de Best Buy (developer.bestbuy.com) + enlaces de afiliado vía su red (Impact/CJ). |
-| eBay | eBay Partner Network + Browse API de eBay. |
-| Etsy | Programa en Awin: feed de productos. |
-| AliExpress | AliExpress Portals: API y feeds de productos. |
-| Temu | Programa de afiliados de Temu (enlaces y catálogo desde su panel). |
-| Otras (CJ, Rakuten, Awin, Impact) | Todas ofrecen "product feeds" en CSV por anunciante. |
+| Tienda | Programa de afiliados | Cómo se obtienen los productos |
+|---|---|---|
+| Amazon | Amazon Associates: affiliate-program.amazon.com | API oficial (Product Advertising API). Amazon solo da acceso después de que tu cuenta tenga ventas calificadas. Pide mostrar la fecha y hora del precio y no guardar precios más de 24 h. |
+| Walmart | affiliates.walmart.com (gestionado en Impact) | Descarga del catálogo de productos (CSV/FTP) desde Impact. |
+| Target | partners.target.com (gestionado en Impact) | Descarga del catálogo de productos desde Impact. |
+| Best Buy | Se solicita en impact.com (busca "Best Buy" dentro de la plataforma) | API de productos de Best Buy (developer.bestbuy.com) o el catálogo de Impact. |
+| eBay | eBay Partner Network: partnernetwork.ebay.com | Browse API de eBay. |
+| Etsy | etsy.com/affiliates (gestionado en Awin) | Feed de productos de Awin. |
+| Temu | temu.com/affiliate | Enlaces y catálogo desde su panel de afiliados. |
+| AliExpress | AliExpress Portals: portals.aliexpress.com | API y feeds de productos de Portals. |
+| Home Depot | A través de impact.com | Catálogo de productos (CSV) desde Impact. |
+| Lowe's | A través de impact.com y cj.com | Catálogo de productos (CSV) desde Impact o CJ. |
 
 Con los feeds CSV:
 
@@ -43,9 +45,9 @@ Eso reescribe `productos.js`. Si una red usa nombres de columna distintos, añá
 
 ## Búsqueda en todas las tiendas
 
-Cuando alguien busca algo, la web enseña tus productos que coinciden y, encima, un botón por tienda que abre esa misma búsqueda en Amazon, Walmart, Target, Best Buy, eBay, Etsy, Temu y AliExpress.
+Cuando alguien busca algo, la web enseña tus productos que coinciden y, encima, un botón por tienda que abre esa misma búsqueda en Amazon, Walmart, Target, Best Buy, eBay, Etsy, Temu, AliExpress, Home Depot y Lowe’s.
 
-Para cobrar comisión por esas búsquedas, pon tus datos en el bloque `BUSQUEDA_TIENDAS` al principio de `app.js`: tu tag de Amazon (`TU-TAG-20`), tu `campid` de eBay y, para Walmart, Target, Best Buy y Etsy, tu enlace de Impact o Awin en el campo `afiliado` (el ejemplo está escrito al lado, solo hay que cambiar `TU-ID`). Copia esos enlaces de tu panel de cada red, que te da el formato exacto.
+Para cobrar comisión por esas búsquedas, pon tus datos en el bloque `BUSQUEDA_TIENDAS` al principio de `app.js`: tu tag de Amazon (`TU-TAG-20`), tu `campid` de eBay y, para Walmart, Target, Best Buy, Etsy, Home Depot y Lowe’s, tu enlace de Impact, Awin o CJ en el campo `afiliado` (el ejemplo está escrito al lado, solo hay que cambiar `TU-ID`). Copia esos enlaces de tu panel de cada red, que te da el formato exacto.
 
 Mostrar los productos de las tiendas dentro de tu web, en vivo, necesita las API de cada tienda y un pequeño servidor que guarde tus claves; se puede añadir cuando tengas las cuentas aprobadas.
 

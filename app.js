@@ -16,7 +16,8 @@
   // Color de identificación de cada tienda
   const TIENDAS = {
     "Amazon": "#e88a00", "Walmart": "#0071ce", "Target": "#cc0000", "Best Buy": "#0046be",
-    "eBay": "#5f8f12", "Etsy": "#e2581a", "Temu": "#f06a00", "AliExpress": "#d8290a"
+    "eBay": "#5f8f12", "Etsy": "#e2581a", "Temu": "#f06a00", "AliExpress": "#d8290a",
+    "Home Depot": "#f96302", "Lowe’s": "#004990"
   };
 
   /* BÚSQUEDA EN TODAS LAS TIENDAS
@@ -33,7 +34,9 @@
     "eBay":       { buscar: "https://www.ebay.com/sch/i.html?_nkw={q}&mkcid=1&mkrid=711-53200-19255-0&campid=TU-CAMPID&toolid=10001" },
     "Etsy":       { buscar: "https://www.etsy.com/search?q={q}", afiliado: "" /* Awin: https://www.awin1.com/cread.php?awinmid=6220&awinaffid=TU-ID&ued={url} */ },
     "Temu":       { buscar: "https://www.temu.com/search_result.html?search_key={q}" },
-    "AliExpress": { buscar: "https://www.aliexpress.us/w/wholesale-{q}.html" }
+    "AliExpress": { buscar: "https://www.aliexpress.us/w/wholesale-{q}.html" },
+    "Home Depot": { buscar: "https://www.homedepot.com/s/{q}", afiliado: "" /* Impact: pega tu enlace de seguimiento de Home Depot y deja {url} donde va la página */ },
+    "Lowe’s":     { buscar: "https://www.lowes.com/search?searchTerm={q}", afiliado: "" /* Impact o CJ: pega tu enlace de seguimiento y deja {url} donde va la página */ }
   };
   function urlBusqueda(tienda, q) {
     const c = BUSQUEDA_TIENDAS[tienda];

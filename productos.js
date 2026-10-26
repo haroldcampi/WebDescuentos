@@ -2,7 +2,7 @@
   CATÁLOGO DE PRODUCTOS
   ---------------------
   Cada producto es un objeto. Para añadir uno, copia un bloque y cambia los datos.
-  - tienda: "Amazon", "Walmart", "Target", "Best Buy", "eBay", "Etsy", "Temu" o "AliExpress"
+  - tienda: "Amazon", "Walmart", "Target", "Best Buy", "eBay", "Etsy", "Temu", "AliExpress", "Home Depot" o "Lowe’s"
   - imagenes: lista de URLs de las fotos que te da la tienda o su API/feed.
               Si la dejas vacía [], la web dibuja una imagen provisional.
   - tituloEn: (opcional) el título en inglés. Si falta, la versión inglesa muestra el título en español.
@@ -59,5 +59,11 @@ window.PRODUCTOS = [
   { id: "ali-001", titulo: "Mini proyector portátil 1080p con Wi-Fi", tituloEn: "Portable 1080p mini projector with Wi-Fi", tienda: "AliExpress", categoria: "Electrónica", precio: 54.3, precioAnterior: 98.7, valoracion: 4.6, resenas: 8900, imagenes: [], enlace: "https://www.aliexpress.us/item/EJEMPLO01.html", actualizado: "2026-10-17" },
   { id: "ali-002", titulo: "Fuente de agua para gatos con filtro, 2.5 L", tituloEn: "Cat water fountain with filter, 2.5 L", tienda: "AliExpress", categoria: "Mascotas", precio: 15.6, precioAnterior: 29.9, valoracion: 4.7, resenas: 4020, imagenes: [], enlace: "https://www.aliexpress.us/item/EJEMPLO02.html", actualizado: "2026-10-17" },
   { id: "ali-003", titulo: "Rizador de pelo cerámico inalámbrico", tituloEn: "Cordless ceramic hair curler", tienda: "AliExpress", categoria: "Belleza", precio: 21.4, precioAnterior: 39.0, valoracion: 4.3, resenas: 1300, imagenes: [], enlace: "https://www.aliexpress.us/item/EJEMPLO03.html", actualizado: "2026-10-17" },
-  { id: "ali-004", titulo: "Llave de impacto eléctrica sin escobillas", tituloEn: "Brushless electric impact wrench", tienda: "AliExpress", categoria: "Herramientas", precio: 48.9, precioAnterior: 89.0, valoracion: 4.5, resenas: 2760, imagenes: [], enlace: "https://www.aliexpress.us/item/EJEMPLO04.html", actualizado: "2026-10-17" }
+  { id: "ali-004", titulo: "Llave de impacto eléctrica sin escobillas", tituloEn: "Brushless electric impact wrench", tienda: "AliExpress", categoria: "Herramientas", precio: 48.9, precioAnterior: 89.0, valoracion: 4.5, resenas: 2760, imagenes: [], enlace: "https://www.aliexpress.us/item/EJEMPLO04.html", actualizado: "2026-10-17" },
+
+  { id: "hdp-001", titulo: "Taladro atornillador inalámbrico 20 V con 2 baterías y maletín", tituloEn: "20 V cordless drill/driver with 2 batteries and case", tienda: "Home Depot", categoria: "Herramientas", precio: 99.0, precioAnterior: 159.0, valoracion: 4.7, resenas: 5310, imagenes: [], enlace: "https://www.homedepot.com/p/EJEMPLO01", actualizado: "2026-10-26" },
+  { id: "hdp-002", titulo: "Juego de 6 recipientes herméticos de vidrio para cocina", tituloEn: "6-piece glass airtight food container set", tienda: "Home Depot", categoria: "Hogar y cocina", precio: 24.98, precioAnterior: 34.98, valoracion: 4.5, resenas: 1880, imagenes: [], enlace: "https://www.homedepot.com/p/EJEMPLO02", actualizado: "2026-10-26" },
+
+  { id: "low-001", titulo: "Juego de llaves y dados de 120 piezas con estuche", tituloEn: "120-piece socket and wrench set with case", tienda: "Lowe’s", categoria: "Herramientas", precio: 59.0, precioAnterior: 89.0, valoracion: 4.6, resenas: 2640, imagenes: [], enlace: "https://www.lowes.com/pd/EJEMPLO01", actualizado: "2026-10-26" },
+  { id: "low-002", titulo: "Ventilador de pie de 16\" con mando a distancia", tituloEn: "16\" pedestal fan with remote control", tienda: "Lowe’s", categoria: "Hogar y cocina", precio: 39.98, precioAnterior: 54.98, valoracion: 4.4, resenas: 970, imagenes: [], enlace: "https://www.lowes.com/pd/EJEMPLO02", actualizado: "2026-10-26" }
 ];

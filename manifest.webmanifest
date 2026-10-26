@@ -1,7 +1,7 @@
 {
   "name": "Deal Radar · Radar de Ofertas",
   "short_name": "Deal Radar",
-  "description": "Las mejores ofertas de 8 tiendas en un solo lugar.",
+  "description": "Las mejores ofertas de 10 tiendas en un solo lugar.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
