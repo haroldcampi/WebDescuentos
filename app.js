@@ -534,8 +534,7 @@
         ${COMUNIDAD ? `<section class="comments" id="comentarios" aria-labelledby="com-title"><h3 id="com-title">${T("com.title")}</h3>
           <div class="com-box" id="com-box" data-id="${esc(p.id)}">${cajaComentar(p.id)}</div>
           <div class="com-list" id="com-list"><p class="com-note">${T("com.loading")}</p></div></section>` : ""}
-        ${similares.length ? `<div class="similar"><h3>${T("sheet.more", { c: esc(CAT(p.categoria)) })}</h3><div class="sim-row">${similares.map((s) =>
-          `<button class="sim" type="button" data-abrir="${esc(s.id)}"><img src="${esc(s.imagenes[0])}" alt=""><span>${esc(TIT(s))}</span><b>${money.format(s.precio)}</b></button>`).join("")}</div></div>` : ""}
+        ${similares.length ? `<div class="similar"><h3>${T("sheet.more", { c: esc(CAT(p.categoria)) })}</h3><div class="grid sim-grid">${similares.map(tarjeta).join("")}</div></div>` : ""}
       </div>`;
     d.dataset.id = id;
     if (COMUNIDAD) safe(() => cargarComentarios(id));

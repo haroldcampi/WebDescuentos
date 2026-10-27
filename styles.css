@@ -988,3 +988,7 @@ main > .block:first-of-type { margin-top: clamp(40px, 5vw, 72px); padding-top: 0
 
 /* Espacio con anuncio real: sin recuadro ni texto de ejemplo */
 .ad.ad-on { display: block; padding: 0; background: none; border: 0; min-height: 0; }
+
+/* «Más ofertas de…» en la ficha: las mismas tarjetas que el catálogo */
+.similar .sim-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 40px 20px; }
+@media (max-width: 640px) { .similar .sim-grid { grid-template-columns: repeat(2, 1fr); gap: 32px 12px; } }
