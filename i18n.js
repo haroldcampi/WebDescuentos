@@ -164,7 +164,7 @@
       "trust.3h": "Gratis para ti",
       "trust.3p": "No pagas nada extra: la tienda nos paga una pequeña comisión.",
       "trust.4h": "Alertas a tu medida",
-      "trust.4p": "Guarda una búsqueda y te enseñamos lo nuevo cuando vuelvas.",
+      "trust.4p": "Sigue el precio de un producto y te avisamos cuando baje.",
       "deal.verified": "Verificada",
       "deal.verifiedTip": "Precio y tienda comprobados a mano",
       "deal.new": "Nueva",
@@ -423,6 +423,13 @@
       "share.ctaTitle": "¿Encontraste una ganga?",
       "share.ctaText": "Compártela con la comunidad. La revisamos antes de publicarla para que solo salgan ofertas buenas de verdad.",
       "auth.confirmed": "¡Tu email está confirmado! Ya puedes entrar con tu email y contraseña.",
+      "link.label": "Compartir",
+      "link.email": "Email",
+      "link.copy": "Copiar enlace",
+      "link.copied": "¡Enlace copiado!",
+      "link.subject": "Mira esta oferta: {t}",
+      "link.body": "Mira esta oferta que encontré en Radar de Ofertas:\n\n{t}\n{p} en {s}{a}\n\nVer la oferta: {u}",
+      "link.was": " (antes {w})",
       "auth.linkExpired": "Ese enlace ya se usó o caducó. Prueba a entrar con tu email y contraseña; si tu cuenta aún no está confirmada, regístrate otra vez para recibir un enlace nuevo."
     },
 
@@ -584,7 +591,7 @@
       "trust.3h": "Free for you",
       "trust.3p": "You pay nothing extra: the store pays us a small commission.",
       "trust.4h": "Alerts made for you",
-      "trust.4p": "Save a search and we show you what's new when you come back.",
+      "trust.4p": "Follow a product's price and we'll tell you when it drops.",
       "deal.verified": "Verified",
       "deal.verifiedTip": "Price and store checked by hand",
       "deal.new": "New",
@@ -843,6 +850,13 @@
       "share.ctaTitle": "Found a bargain?",
       "share.ctaText": "Share it with the community. We review it before publishing so only truly good deals show up.",
       "auth.confirmed": "Your email is confirmed! You can now sign in with your email and password.",
+      "link.label": "Share",
+      "link.email": "Email",
+      "link.copy": "Copy link",
+      "link.copied": "Link copied!",
+      "link.subject": "Check out this deal: {t}",
+      "link.body": "Check out this deal I found on Deal Radar:\n\n{t}\n{p} at {s}{a}\n\nSee the deal: {u}",
+      "link.was": " (was {w})",
       "auth.linkExpired": "That link was already used or has expired. Try signing in with your email and password; if your account isn't confirmed yet, sign up again to get a new link."
     }
   };

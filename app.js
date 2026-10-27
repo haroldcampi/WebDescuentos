@@ -342,7 +342,7 @@
     if (!q) { box.hidden = true; box.innerHTML = ""; return; }
     const tiendas = Object.keys(BUSQUEDA_TIENDAS);
     box.innerHTML = `<p class="ew-title">${T("ew.title", { q: esc(q) })}</p>
-      <div class="ew-row">${botonAlerta(q)}${tiendas.map((t) => `<a class="ew-btn" style="--c:${TIENDAS[t] || "#888"}" href="${esc(urlBusqueda(t, q))}" target="_blank" rel="sponsored nofollow noopener"><span class="mono" aria-hidden="true">${esc(t[0])}</span>${esc(t)} ${FLECHA}</a>`).join("")}</div>`;
+      <div class="ew-row">${tiendas.map((t) => `<a class="ew-btn" style="--c:${TIENDAS[t] || "#888"}" href="${esc(urlBusqueda(t, q))}" target="_blank" rel="sponsored nofollow noopener"><span class="mono" aria-hidden="true">${esc(t[0])}</span>${esc(t)} ${FLECHA}</a>`).join("")}</div>`;
     box.hidden = false;
   }
   /* Catálogo por tandas: con cientos de productos, pintar todos de golpe vuelve lenta la página en el móvil */
@@ -519,6 +519,9 @@
           ${estrellas(p)}
           <div>${precios(p)}${p.descuento ? `<span class="save">${T("sheet.saveFull", { a: money.format(p.ahorro), d: p.descuento })}</span>` : ""}</div>
           <div class="info-actions">${enlace(p, T("sheet.buyAt", { s: esc(p.tienda) }))}<button class="ghost" type="button" data-comparar="${esc(p.id)}" aria-pressed="${enComp}">${T(enComp ? "sheet.inCompare" : "card.compare")}</button>${botonesCuenta(p, true)}</div>
+          <div class="share-row"><span>${T("link.label")}</span>
+            <a class="btn-ghost share-btn" href="${esc(mailtoProducto(p))}">${ICO_SOBRE}<span>${T("link.email")}</span></a>
+            <button class="btn-ghost share-btn" type="button" data-copiar-enlace="${esc(p.id)}">${ICO_ENLACE}<span>${T("link.copy")}</span></button></div>
           <div id="objetivo-box" data-id="${esc(p.id)}">${cajaObjetivo(p.id)}</div>
           ${extrasFicha(p)}
           ${votos(p, true)}
@@ -537,6 +540,8 @@
         ${similares.length ? `<div class="similar"><h3>${T("sheet.more", { c: esc(CAT(p.categoria)) })}</h3><div class="grid sim-grid">${similares.map(tarjeta).join("")}</div></div>` : ""}
       </div>`;
     d.dataset.id = id;
+    // La dirección del navegador apunta a este producto (se puede copiar o recargar)
+    try { const u = new URL(location.href); u.searchParams.set("producto", id); history.replaceState(null, "", u); } catch (e) {}
     if (COMUNIDAD) safe(() => cargarComentarios(id));
     if (sb && cuenta.seguidos.has(id)) safe(() => marcarSeguidoVisto(id));
     if (!d.open) { if (typeof d.showModal === "function") d.showModal(); else d.setAttribute("open", ""); }
@@ -604,9 +609,21 @@
 
   /* Eventos */
   let t;
-  $("#q").addEventListener("input", (e) => { clearTimeout(t); t = setTimeout(() => { estado.q = e.target.value.trim(); pintar(); }, 120); });
+  // Lleva la vista a los resultados (si ya están arriba en pantalla, no se mueve). El cursor sigue en el buscador.
+  function irAResultados() {
+    const cat = $("#catalogo"), cab = $(".top").getBoundingClientRect().bottom;
+    const arriba = cat.getBoundingClientRect().top - cab;
+    if (arriba > 24 || arriba < -cat.offsetHeight + 200) cat.scrollIntoView({ block: "start" });
+  }
+  let tBajar;
+  $("#q").addEventListener("input", (e) => {
+    clearTimeout(t); clearTimeout(tBajar);
+    t = setTimeout(() => { estado.q = e.target.value.trim(); pintar(); }, 120);
+    // Al dejar de escribir un momento, la página baja sola hasta los resultados
+    tBajar = setTimeout(() => { if (e.target.value.trim()) irAResultados(); }, 600);
+  });
   $("#buscador").addEventListener("submit", (e) => {
-    e.preventDefault(); estado.q = $("#q").value.trim(); pintar(); safe(marcarVista);
+    e.preventDefault(); clearTimeout(tBajar); estado.q = $("#q").value.trim(); pintar();
     $("#catalogo").scrollIntoView({ block: "start" });
   });
   $("#cats").addEventListener("click", (e) => { const b = e.target.closest("[data-cat]"); if (b) { estado.categoria = b.dataset.cat; pintar(); } });
@@ -706,9 +723,6 @@
     const vs = e.target.closest("[data-ver-seguido]"); if (vs) { $("#alertas").close(); marcarSeguidoVisto(vs.dataset.verSeguido); return abrir(vs.dataset.verSeguido); }
     const ds = e.target.closest("[data-dejar-seguir]"); if (ds) return alternarSeguir(ds.dataset.dejarSeguir);
     const v = e.target.closest("[data-votar]"); if (v) return votar(v.closest("[data-voto]").dataset.voto, +v.dataset.votar);
-    const al = e.target.closest("[data-alerta]"); if (al) return alternarAlerta(al.dataset.alerta);
-    const va = e.target.closest("[data-ver-alerta]"); if (va) return verAlerta(va.dataset.verAlerta);
-    const ba = e.target.closest("[data-borrar-alerta]"); if (ba) return borrarAlerta(ba.dataset.borrarAlerta);
     const c = e.target.closest("[data-comparar]"); if (c) return alternarComparar(c.dataset.comparar);
     const a = e.target.closest("[data-abrir]");
     if (a) { if ($("#comparador").open) $("#comparador").close(); return abrir(a.dataset.abrir); }
@@ -719,6 +733,32 @@
     const f = e.target.closest("[data-foto]"); if (f) return verFoto(+f.dataset.foto);
   });
   document.querySelectorAll("dialog").forEach((d) => d.addEventListener("click", (e) => { if (e.target === d) d.close(); }));
+  /* Compartir un producto: enlace directo, por email o copiándolo */
+  const ICO_SOBRE = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg>';
+  const ICO_ENLACE = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/></svg>';
+  function enlaceProducto(id) {
+    const u = new URL(location.origin + location.pathname);
+    u.searchParams.set("producto", id);
+    if (i18n.lang === "en") u.searchParams.set("lang", "en");
+    return u.toString();
+  }
+  function mailtoProducto(p) {
+    const asunto = T("link.subject", { t: TIT(p) });
+    const cuerpo = T("link.body", { t: TIT(p), p: money.format(p.precio), s: p.tienda, a: p.descuento ? T("link.was", { w: money.format(p.precioAnterior) }) : "", u: enlaceProducto(p.id) });
+    return `mailto:?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
+  }
+  document.addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-copiar-enlace]"); if (!b) return;
+    const url = enlaceProducto(b.dataset.copiarEnlace);
+    // Copia con el portapapeles del navegador; si no responde en 1 s o falla, usa el método clásico
+    const clasico = () => { const t = document.createElement("textarea"); t.value = url; t.setAttribute("readonly", ""); t.style.position = "fixed"; t.style.opacity = "0"; b.closest("dialog, body").appendChild(t); t.select(); try { document.execCommand("copy"); } catch (er) {} t.remove(); };
+    try { await Promise.race([navigator.clipboard.writeText(url), new Promise((_, no) => setTimeout(() => no(new Error("tiempo")), 1000))]); } catch (er) { clasico(); }
+    const sp = b.querySelector("span"); sp.textContent = T("link.copied"); b.classList.add("ok");
+    setTimeout(() => { sp.textContent = T("link.copy"); b.classList.remove("ok"); }, 1800);
+  });
+  // Al cerrar la ficha, la dirección vuelve a ser la de la web
+  $("#ficha").addEventListener("close", () => { try { const u = new URL(location.href); if (u.searchParams.has("producto")) { u.searchParams.delete("producto"); history.replaceState(null, "", u); } } catch (e) {} });
+
   $("#ficha").addEventListener("keydown", (e) => {
     if (e.key === "ArrowRight") verFoto(fotoActual + 1);
     if (e.key === "ArrowLeft") verFoto(fotoActual - 1);
@@ -860,60 +900,22 @@
     btn.disabled = false;
   });
 
-  /* ===== Alertas de búsqueda =====
-     Se guardan en este navegador. Al volver, la campana cuenta las ofertas nuevas que coinciden. */
-  const CLAVE_ALERTAS = "radar-alertas";
-  let alertas = [];
-  try { alertas = JSON.parse(localStorage.getItem(CLAVE_ALERTAS) || "[]").filter((a) => a && a.q); } catch (e) {}
-  const guardarAlertas = () => { try { localStorage.setItem(CLAVE_ALERTAS, JSON.stringify(alertas)); } catch (e) {} };
-  const coinciden = (q) => { const w = normalizar(q).split(/\s+/).filter(Boolean); return productos.filter((p) => w.every((x) => p._texto.includes(x))).map((p) => p.id); };
-  const mismaQ = (a, b) => normalizar(a).trim() === normalizar(b).trim();
-  const buscarAlerta = (q) => alertas.find((a) => mismaQ(a.q, q));
-  const nuevasDe = (a) => coinciden(a.q).filter((id) => !a.vistos.includes(id));
-  function botonAlerta(q) {
-    const a = buscarAlerta(q);
-    return `<button class="ew-btn alert-btn" type="button" data-alerta="${esc(q)}" aria-pressed="${!!a}">${a ? CHECK : '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15L6 16ZM10 20.5a2 2 0 0 0 4 0"/></svg>'}${esc(T(a ? "alert.saved" : "alert.save", { q }))}</button>`;
-  }
+  /* ===== Mis alertas: los productos que sigue el usuario (bajadas de precio) ===== */
   function pintarCampana() {
-    const n = alertas.reduce((s, a) => s + nuevasDe(a).length, 0) + bajadas().length, dot = $("#campana-n"), b = $("#campana");
+    const n = bajadas().length, dot = $("#campana-n"), b = $("#campana");
     dot.hidden = n === 0; dot.textContent = n > 9 ? "9+" : n;
     const lab = n ? T("alert.bellN", { n }) : T("alert.bell");
     b.setAttribute("aria-label", lab); b.title = lab;
   }
-  function alternarAlerta(q) {
-    const a = buscarAlerta(q);
-    if (a) alertas = alertas.filter((x) => x !== a);
-    else alertas.push({ q, vistos: coinciden(q), creada: new Date().toISOString() });
-    guardarAlertas(); pintarEnTodas(); pintarCampana();
-    if ($("#alertas").open) pintarAlertas();
-  }
-  function borrarAlerta(q) { alertas = alertas.filter((a) => !mismaQ(a.q, q)); guardarAlertas(); pintarAlertas(); pintarCampana(); if (estado.q) pintarEnTodas(); }
-  function verAlerta(q) {
-    const a = buscarAlerta(q); if (a) { a.vistos = coinciden(a.q); guardarAlertas(); }
-    $("#alertas").close();
-    Object.assign(estado, { q, categoria: "Todas" }); estado.tiendas.clear();
-    $("#q").value = q; pintarTiendasFiltro(); pintar(); pintarCampana();
-    $("#catalogo").scrollIntoView({ block: "start" });
-  }
   function pintarAlertas() {
-    const filas = alertas.map((a) => {
-      const n = nuevasDe(a).length;
-      return `<li><div><b>“${esc(a.q)}”</b><span class="${n ? "fresh" : ""}">${n ? (n === 1 ? T("alert.new1") : T("alert.newN", { n })) : T("alert.none")}</span></div>
-        <button class="btn-ghost" type="button" data-ver-alerta="${esc(a.q)}">${T("alert.view")}</button>
-        <button class="linkbtn" type="button" data-borrar-alerta="${esc(a.q)}" aria-label="${esc(T("alert.deleteX", { q: a.q }))}">${T("alert.delete")}</button></li>`;
-    }).join("");
     $("#alertas").innerHTML = `<button class="close" type="button" aria-label="${T("sheet.close")}" data-cerrar>×</button>
       <div class="alerts-wrap"><h2>${T("alert.title")}</h2>
-      ${sb ? `<h3 class="alerts-sub">${T("follow.section")}</h3>${pintarSeguidos()}<h3 class="alerts-sub">${T("alert.searches")}</h3>` : ""}
-      <p class="com-note">${T("alert.intro")}</p>
-      ${filas ? `<ul class="alerts-list">${filas}</ul>` : `<p class="alerts-empty">${T("alert.empty")}</p>`}</div>`;
+      <h3 class="alerts-sub">${T("follow.section")}</h3>${pintarSeguidos()}</div>`;
   }
   $("#campana").addEventListener("click", () => {
     pintarAlertas();
     const d = $("#alertas"); if (typeof d.showModal === "function") d.showModal(); else d.setAttribute("open", "");
   });
-  // Buscar lo mismo que una alerta cuenta como «visto»
-  const marcarVista = () => { const a = estado.q && buscarAlerta(estado.q); if (a) { a.vistos = coinciden(a.q); guardarAlertas(); pintarCampana(); } };
 
   /* ===== Cuentas de usuario (Supabase Auth): favoritos y productos seguidos =====
      Entrar con email y contraseña, Google o Apple. Google y Apple hay que activarlos en Supabase
@@ -1104,7 +1106,6 @@
       <button type="button" data-acct="perfil">${miAvatar("ava-xs")}${T("acct.profile")}</button>
       <button type="button" data-acct="favs">${CORAZON}${T("acct.favsN", { n: cuenta.favoritos.size })}</button>
       <button type="button" data-acct="alerts">${CAMPANA}${T("acct.alerts")}</button>
-      <button type="button" data-compartir>${MAS}${T("share.menu")}</button>
       <button type="button" data-acct="logout">${T("acct.logout")}</button>` : "";
   }
   function pedirCuenta(motivo, accion) { cuenta.pendiente = accion || null; abrirAcceso("crear", motivo); }
@@ -1526,6 +1527,8 @@
 
   safe(() => i18n.apply());
   safe(ponerAnuncios);
-  safe(pintarPortada); safe(entradas); safe(pintarTiendasPortada); safe(pintarCategorias); safe(pintarTiendasFiltro); safe(pintarRango); safe(pintarMenus); safe(pintarEvento); safe(pintar); safe(pintarBarraComparar); safe(pintarCampana);
+  safe(pintarPortada); safe(entradas); safe(pintarTiendasPortada); safe(pintarCategorias); safe(pintarTiendasFiltro); safe(pintarRango); safe(pintarMenus); safe(pintarEvento); safe(pintar);
+  // Enlace compartido (?producto=id): abre directamente la ficha de ese producto
+  safe(() => { const id = new URLSearchParams(location.search).get("producto"); if (id && porId.has(id)) abrir(id); }); safe(pintarBarraComparar); safe(pintarCampana);
   if (COMUNIDAD) cargarVotos().catch((e) => console.error(e));
 })();
