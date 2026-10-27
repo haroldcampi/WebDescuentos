@@ -1373,6 +1373,23 @@
     const f = $("#ficha"); if (f.open && f.dataset.id && $("#com-list")) safe(() => cargarComentarios(f.dataset.id));
   });
   if (sb) $("#compartir-cta").hidden = false;
+  /* Al volver del email de confirmación: si el enlace se abrió en otro navegador o en la app del correo,
+     Supabase confirma la cuenta pero no puede iniciar la sesión aquí. Entonces avisamos y abrimos «Entrar». */
+  const vueltaEmail = (() => {
+    const q = new URLSearchParams(location.search), h = new URLSearchParams(location.hash.replace(/^#/, ""));
+    return { codigo: q.has("code"), error: q.get("error_description") || h.get("error_description") || "" };
+  })();
+  if (sb && (vueltaEmail.codigo || vueltaEmail.error) && !new URLSearchParams(location.search).has("popup")) {
+    sb.auth.getSession().then(({ data }) => {
+      const u = new URL(location.href);
+      ["code", "error", "error_code", "error_description"].forEach((k) => u.searchParams.delete(k));
+      u.hash = "";
+      history.replaceState(null, "", u);
+      if (data?.session) return; // la sesión se abrió bien: nada que avisar
+      abrirAcceso("entrar");
+      pintarAcceso(T(vueltaEmail.error ? "auth.linkExpired" : "auth.confirmed"), !vueltaEmail.error);
+    }).catch((e) => console.error(e));
+  }
   if (sb) {
     pintarCuenta();
     sb.auth.onAuthStateChange((evento, sesion) => {

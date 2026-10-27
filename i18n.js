@@ -421,7 +421,9 @@
       "share.limit": "Has enviado muchas ofertas hoy. Vuelve mañana.",
       "share.thanks": "¡Gracias! Hemos recibido tu oferta y la revisaremos antes de publicarla.",
       "share.ctaTitle": "¿Encontraste una ganga?",
-      "share.ctaText": "Compártela con la comunidad. La revisamos antes de publicarla para que solo salgan ofertas buenas de verdad."
+      "share.ctaText": "Compártela con la comunidad. La revisamos antes de publicarla para que solo salgan ofertas buenas de verdad.",
+      "auth.confirmed": "¡Tu email está confirmado! Ya puedes entrar con tu email y contraseña.",
+      "auth.linkExpired": "Ese enlace ya se usó o caducó. Prueba a entrar con tu email y contraseña; si tu cuenta aún no está confirmada, regístrate otra vez para recibir un enlace nuevo."
     },
 
     en: {
@@ -839,7 +841,9 @@
       "share.limit": "You've sent a lot of deals today. Come back tomorrow.",
       "share.thanks": "Thanks! We got your deal and will review it before publishing.",
       "share.ctaTitle": "Found a bargain?",
-      "share.ctaText": "Share it with the community. We review it before publishing so only truly good deals show up."
+      "share.ctaText": "Share it with the community. We review it before publishing so only truly good deals show up.",
+      "auth.confirmed": "Your email is confirmed! You can now sign in with your email and password.",
+      "auth.linkExpired": "That link was already used or has expired. Try signing in with your email and password; if your account isn't confirmed yet, sign up again to get a new link."
     }
   };
 
