@@ -926,6 +926,17 @@
     setItem(k, v) { try { if (this.recordar()) { localStorage.setItem(k, v); sessionStorage.removeItem(k); } else { sessionStorage.setItem(k, v); localStorage.removeItem(k); } } catch (e) {} },
     removeItem(k) { try { localStorage.removeItem(k); sessionStorage.removeItem(k); } catch (e) {} }
   };
+  /* ¿Volvemos del enlace de «He olvidado mi contraseña»? Supabase (modo pkce) entra con ese enlace pero solo avisa
+     «SIGNED_IN», no «PASSWORD_RECOVERY», así que lo detectamos nosotros: al pedir el enlace guardó una clave que acaba en /PASSWORD_RECOVERY */
+  let vueltaRecuperar = (() => {
+    try {
+      const q = new URLSearchParams(location.search);
+      if (!q.has("code")) return false;
+      if (q.has("recuperar")) return true;
+      return [localStorage, sessionStorage].some((s) => Object.keys(s).some((k) => k.endsWith("-code-verifier") && String(s.getItem(k)).endsWith("/PASSWORD_RECOVERY")));
+    } catch (e) { return false; }
+  })();
+  let claveSinCambiar = false; // sesión abierta solo para poner la contraseña nueva
   const sb = COMUNIDAD && window.supabase ? window.supabase.createClient(SUPABASE.url, SUPABASE.clave, { auth: { flowType: "pkce", persistSession: true, detectSessionInUrl: true, storage: almacen } }) : null;
   const cuenta = { usuario: null, favoritos: new Set(), seguidos: new Map(), objetivos: new Map(), pendiente: null };
   const ICO_ENGRANAJE = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>';
@@ -1353,7 +1364,7 @@
         if (!r.error && r.data?.user && !(r.data.user.identities || []).length) r = { error: { message: "already registered" } };
         else if (!r.error && !r.data.session) { pintarAcceso(T("auth.checkEmail", { e: esc(email) }), true); return; }
       } else if (modoAcceso === "olvido") {
-        r = await sb.auth.resetPasswordForEmail(email, { redirectTo: volverAqui() });
+        r = await sb.auth.resetPasswordForEmail(email, { redirectTo: volverAqui() + "?recuperar=1" });
         if (!r.error) { pintarAcceso(T("auth.resetSent", { e: esc(email) }), true); return; }
       } else if (esPerfil()) {
         // El perfil ya existe (se crea con la cuenta): solo se cambia el nombre. Si faltara, se crea.
@@ -1371,7 +1382,16 @@
         }
       } else if (modoAcceso === "nueva") {
         r = await sb.auth.updateUser({ password: pass });
-        if (!r.error) { $("#acceso").close(); return; }
+        if (!r.error) {
+          // Contraseña cambiada: cerramos la sesión del enlace (en todos los dispositivos) y pedimos que entre con la nueva
+          claveSinCambiar = false;
+          const correo = cuenta.usuario?.email || "";
+          await sb.auth.signOut().catch((er) => console.error(er));
+          abrirAcceso("entrar");
+          pintarAcceso(T("auth.passChanged"), true);
+          const fe = $('#auth-form [name="email"]'); if (fe && correo) { fe.value = correo; $('#auth-form [name="pass"]')?.focus(); }
+          return;
+        }
       }
       if (r.error) throw r.error;
     } catch (er) { console.error(er); msg.className = "auth-msg"; msg.textContent = errorAcceso(er); }
@@ -1423,7 +1443,11 @@
   });
   document.addEventListener("click", (e) => { if (!e.target.closest("#cuenta")) cerrarMenuCuenta(); });
   $("#cuenta").addEventListener("keydown", (e) => { if (e.key === "Escape") { cerrarMenuCuenta(); $("#cuenta-btn").focus(); } });
-  $("#acceso").addEventListener("close", () => { motivoAcceso = ""; });
+  $("#acceso").addEventListener("close", () => {
+    motivoAcceso = "";
+    // Si cierra la ventana sin poner la contraseña nueva, no lo dejamos dentro con la sesión del enlace
+    if (claveSinCambiar && sb) { claveSinCambiar = false; sb.auth.signOut({ scope: "local" }).catch((e) => console.error(e)); }
+  });
 
   // Ventanita de Google/Apple: al terminar, pasa la sesión a la web principal y se cierra
   const enVentanita = new URLSearchParams(location.search).has("popup") && window.opener && window.opener.location.origin === location.origin;
@@ -1443,15 +1467,20 @@
      Supabase confirma la cuenta pero no puede iniciar la sesión aquí. Entonces avisamos y abrimos «Entrar». */
   const vueltaEmail = (() => {
     const q = new URLSearchParams(location.search), h = new URLSearchParams(location.hash.replace(/^#/, ""));
-    return { codigo: q.has("code"), error: q.get("error_description") || h.get("error_description") || "" };
+    return { codigo: q.has("code"), recuperar: q.has("recuperar"), error: q.get("error_description") || h.get("error_description") || "" };
   })();
   if (sb && (vueltaEmail.codigo || vueltaEmail.error) && !new URLSearchParams(location.search).has("popup")) {
     sb.auth.getSession().then(({ data }) => {
       const u = new URL(location.href);
-      ["code", "error", "error_code", "error_description"].forEach((k) => u.searchParams.delete(k));
+      ["code", "error", "error_code", "error_description", "recuperar"].forEach((k) => u.searchParams.delete(k));
       u.hash = "";
       history.replaceState(null, "", u);
       if (data?.session) return; // la sesión se abrió bien: nada que avisar
+      if (vueltaEmail.recuperar) { // enlace de contraseña caducado o abierto en otro navegador: que pida otro aquí
+        abrirAcceso("olvido");
+        pintarAcceso(T(vueltaEmail.error ? "auth.resetExpired" : "auth.resetOtherBrowser"), false);
+        return;
+      }
       abrirAcceso("entrar");
       pintarAcceso(T(vueltaEmail.error ? "auth.linkExpired" : "auth.confirmed"), !vueltaEmail.error);
     }).catch((e) => console.error(e));
@@ -1461,10 +1490,10 @@
     sb.auth.onAuthStateChange((evento, sesion) => {
       const antes = cuenta.usuario?.id;
       cuenta.usuario = sesion?.user || null;
-      if (evento === "PASSWORD_RECOVERY") { abrirAcceso("nueva"); }
+      if (evento === "PASSWORD_RECOVERY" || (evento === "SIGNED_IN" && vueltaRecuperar)) { vueltaRecuperar = false; claveSinCambiar = true; abrirAcceso("nueva"); }
       else if (evento === "SIGNED_IN" && $("#acceso").open && modoAcceso !== "nueva") $("#acceso").close();
       // Al volver de Google/Apple o del email, quita el código de la dirección
-      if (/[?&](code|error_description)=/.test(location.search)) { const u = new URL(location.href); ["code", "error", "error_code", "error_description"].forEach((k) => u.searchParams.delete(k)); history.replaceState(null, "", u); }
+      if (/[?&](code|error_description)=/.test(location.search)) { const u = new URL(location.href); ["code", "error", "error_code", "error_description", "recuperar"].forEach((k) => u.searchParams.delete(k)); history.replaceState(null, "", u); }
       if (enVentanita && sesion && evento === "SIGNED_IN") {
         window.opener.postMessage({ tipo: "radar-sesion", access_token: sesion.access_token, refresh_token: sesion.refresh_token }, location.origin);
         setTimeout(() => window.close(), 100);
@@ -1544,6 +1573,25 @@
   if ("serviceWorker" in navigator && location.protocol === "https:") {
     addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch((e) => console.error(e)));
   }
+
+  /* Logo: recarga la web entera con todo al día (borra las copias guardadas y vuelve al inicio) */
+  $(".logo").addEventListener("click", async (e) => {
+    if (e.ctrlKey || e.metaKey || e.shiftKey || e.button) return; // abrir en otra pestaña sigue funcionando
+    e.preventDefault();
+    const logo = e.currentTarget;
+    if (logo.classList.contains("recargando")) return;
+    logo.classList.add("recargando");
+    try {
+      const reg = await navigator.serviceWorker?.getRegistration();
+      await reg?.update();
+      if (window.caches) await Promise.all((await caches.keys()).map((k) => caches.delete(k)));
+      // Vuelve a descargar los archivos de la web saltándose la caché del navegador
+      const archivos = ["./", "styles.css", "app.js", "i18n.js", "productos.js", "manifest.webmanifest"];
+      await Promise.all(archivos.map((a) => fetch(a, { cache: "reload" }).catch(() => {})));
+    } catch (err) { console.error(err); }
+    location.replace(location.pathname); // sin #ficha ni filtros: entra limpia desde arriba
+  });
+
   let avisoInstalar = null;
   addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); avisoInstalar = e; $("#instalar").hidden = false; });
   $("#instalar").addEventListener("click", async () => { if (!avisoInstalar) return; avisoInstalar.prompt(); await avisoInstalar.userChoice.catch(() => {}); avisoInstalar = null; $("#instalar").hidden = true; });

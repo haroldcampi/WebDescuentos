@@ -133,6 +133,8 @@ p { margin: 0; text-wrap: pretty; }
 .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 500; font-size: var(--step-body); letter-spacing: -0.02em; white-space: nowrap; color: var(--midnight); }
 .logo-mark { transition: transform .6s var(--ease-out); }
 .logo:hover .logo-mark { transform: rotate(-90deg); }
+.logo.recargando .logo-mark { animation: logo-gira .8s linear infinite; }
+@keyframes logo-gira { to { transform: rotate(-360deg); } }
 .search { flex: 1 1 360px; max-width: 520px; display: flex; align-items: center; min-width: 0; background: var(--white); border: var(--line); border-radius: var(--r); padding: 3px 3px 3px 14px; color: var(--slate); transition: border-color .2s ease; }
 .search:focus-within { border-color: var(--lavender); color: var(--midnight); }
 .search input { flex: 1; min-width: 0; border: 0; background: transparent; padding: 9px 10px; font-size: var(--step-small); font-weight: 400; }
