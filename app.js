@@ -632,8 +632,10 @@
     tBajar = setTimeout(() => { if (e.target.value.trim()) irAResultados(); }, 600);
   });
   $("#buscador").addEventListener("submit", (e) => {
-    e.preventDefault(); clearTimeout(t); clearTimeout(tBajar); estado.q = $("#q").value.trim(); pintar();
-    if (esMovil()) { cerrarTeclado(); requestAnimationFrame(() => bajarA(destinoBusqueda())); }
+    e.preventDefault(); clearTimeout(t); clearTimeout(tBajar);
+    if (esMovil()) cerrarTeclado(); // primero el teclado, para que se cierre aunque falle algo al pintar
+    estado.q = $("#q").value.trim(); pintar();
+    if (esMovil()) requestAnimationFrame(() => bajarA(destinoBusqueda()));
     else $("#catalogo").scrollIntoView({ block: "start" });
   });
   // Cierra el teclado del celular. Se repite un instante después porque algunos teclados (iPhone, texto predictivo en Android) ignoran el primer intento.
@@ -1610,14 +1612,18 @@
     const logo = e.currentTarget;
     if (logo.classList.contains("recargando")) return;
     logo.classList.add("recargando");
-    try {
+    // Quita al momento la búsqueda y los filtros y sube arriba, sin esperar a la recarga
+    safe(() => { cerrarTeclado(); clearTimeout(t); clearTimeout(tBajar); limpiar(); scrollTo({ top: 0 }); });
+    // Si la red tarda, no se queda esperando: como mucho 3 segundos y recarga igual
+    const espera = (ms) => new Promise((r) => setTimeout(r, ms));
+    await Promise.race([espera(3000), (async () => { try {
       const reg = await navigator.serviceWorker?.getRegistration();
       await reg?.update();
       if (window.caches) await Promise.all((await caches.keys()).map((k) => caches.delete(k)));
       // Vuelve a descargar los archivos de la web saltándose la caché del navegador
       const archivos = ["./", "styles.css", "app.js", "i18n.js", "productos.js", "manifest.webmanifest"];
       await Promise.all(archivos.map((a) => fetch(a, { cache: "reload" }).catch(() => {})));
-    } catch (err) { console.error(err); }
+    } catch (err) { console.error(err); } })()]);
     location.replace(location.pathname); // sin #ficha ni filtros: entra limpia desde arriba
   });
 
