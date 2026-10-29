@@ -998,3 +998,22 @@ main > .block:first-of-type { margin-top: clamp(40px, 5vw, 72px); padding-top: 0
 .share-row > span { margin-right: 4px; }
 .share-btn { padding: 8px 14px; gap: 8px; }
 .share-btn.ok { background: var(--wash); border-color: var(--indigo); }
+
+/* Menú de la cuenta: avatar y nombre en la misma fila */
+.acct-who { flex-direction: row; align-items: center; text-align: left; }
+.acct-who .ava { flex: none; }
+
+/* Configuración de la cuenta */
+#acceso[data-modo="ajustes"] { width: min(560px, 100% - 32px); }
+.settings { gap: 0; }
+.settings h2 { margin-bottom: 8px; }
+.set-sec { display: flex; flex-direction: column; gap: 12px; padding: 24px 0; border-top: var(--line); }
+.set-sec:first-of-type { border-top: 0; padding-top: 12px; }
+.set-sec h3 { font-size: var(--step-lead); font-weight: 400; }
+.set-now { font-size: var(--step-small); color: var(--steel); overflow-wrap: anywhere; }
+.set-now b { color: var(--midnight); font-weight: 500; }
+.settings .auth-submit { width: auto; align-self: flex-start; padding-inline: 20px; }
+@media (max-width: 640px) { #acceso[data-modo="ajustes"] { width: 100%; } .settings .auth-submit { width: 100%; } }
+
+/* Búsqueda: solo el texto «Buscar … en todas las tiendas» */
+.everywhere .ew-title { margin-bottom: 0; }

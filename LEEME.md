@@ -43,13 +43,11 @@ node importar-feed.js feed-walmart.csv feed-target.csv feed-etsy.csv
 
 Eso reescribe `productos.js`. Si una red usa nombres de columna distintos, añádelos en el bloque `COLUMNAS` del script. Para tener precios al día, programa ese comando a diario (por ejemplo con un cron en Hostinger).
 
-## Búsqueda en todas las tiendas
+## Búsqueda
 
-Cuando alguien busca algo, la web enseña tus productos que coinciden y, encima, un botón por tienda que abre esa misma búsqueda en Amazon, Walmart, Target, Best Buy, eBay, Etsy, Temu, AliExpress, Home Depot y Lowe’s.
+Al escribir en el buscador de arriba, la página baja sola hasta los resultados y muestra «Buscar “…” en todas las tiendas» encima de los productos que coinciden.
 
-Para cobrar comisión por esas búsquedas, pon tus datos en el bloque `BUSQUEDA_TIENDAS` al principio de `app.js`: tu tag de Amazon (`TU-TAG-20`), tu `campid` de eBay y, para Walmart, Target, Best Buy, Etsy, Home Depot y Lowe’s, tu enlace de Impact, Awin o CJ en el campo `afiliado` (el ejemplo está escrito al lado, solo hay que cambiar `TU-ID`). Copia esos enlaces de tu panel de cada red, que te da el formato exacto.
-
-Mostrar los productos de las tiendas dentro de tu web, en vivo, necesita las API de cada tienda y un pequeño servidor que guarde tus claves; se puede añadir cuando tengas las cuentas aprobadas.
+El bloque `BUSQUEDA_TIENDAS` de `app.js` (enlaces de búsqueda de cada tienda con tu ID de afiliado) ya no se muestra en la web; se conserva por si quieres volver a poner los botones de cada tienda.
 
 ## Confianza, urgencia, alertas y comunidad
 

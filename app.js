@@ -340,9 +340,8 @@
     const box = $("#everywhere");
     const q = estado.q;
     if (!q) { box.hidden = true; box.innerHTML = ""; return; }
-    const tiendas = Object.keys(BUSQUEDA_TIENDAS);
-    box.innerHTML = `<p class="ew-title">${T("ew.title", { q: esc(q) })}</p>
-      <div class="ew-row">${tiendas.map((t) => `<a class="ew-btn" style="--c:${TIENDAS[t] || "#888"}" href="${esc(urlBusqueda(t, q))}" target="_blank" rel="sponsored nofollow noopener"><span class="mono" aria-hidden="true">${esc(t[0])}</span>${esc(t)} ${FLECHA}</a>`).join("")}</div>`;
+    // Solo el texto de la búsqueda (sin los botones de cada tienda)
+    box.innerHTML = `<p class="ew-title">${T("ew.title", { q: esc(q) })}</p>`;
     box.hidden = false;
   }
   /* Catálogo por tandas: con cientos de productos, pintar todos de golpe vuelve lenta la página en el móvil */
@@ -929,6 +928,7 @@
   };
   const sb = COMUNIDAD && window.supabase ? window.supabase.createClient(SUPABASE.url, SUPABASE.clave, { auth: { flowType: "pkce", persistSession: true, detectSessionInUrl: true, storage: almacen } }) : null;
   const cuenta = { usuario: null, favoritos: new Set(), seguidos: new Map(), objetivos: new Map(), pendiente: null };
+  const ICO_ENGRANAJE = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>';
   const CORAZON = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.3a4.3 4.3 0 0 1 7.5 2.5C19.5 15.4 12 20 12 20Z"/></svg>';
   const CAMPANA = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15L6 16ZM10 20.5a2 2 0 0 0 4 0"/></svg>';
   const LOGO_GOOGLE = '<svg viewBox="0 0 18 18" width="18" height="18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62Z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18Z"/><path fill="#FBBC05" d="M3.97 10.72A5.4 5.4 0 0 1 3.68 9c0-.6.1-1.18.29-1.72V4.95H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.05l3.01-2.33Z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58Z"/></svg>';
@@ -1103,9 +1103,9 @@
     const lab = u ? `${T("acct.menu")}: ${nombreUsuario(u)}` : T("acct.btn");
     b.setAttribute("aria-label", lab); b.title = lab;
     $("#cuenta-pop").innerHTML = u ? `<div class="acct-who">${miAvatar("ava-md")}<p><b>${esc(nombreUsuario(u))}</b><span>${esc(u.email || "")}</span></p></div>
-      <button type="button" data-acct="perfil">${miAvatar("ava-xs")}${T("acct.profile")}</button>
       <button type="button" data-acct="favs">${CORAZON}${T("acct.favsN", { n: cuenta.favoritos.size })}</button>
       <button type="button" data-acct="alerts">${CAMPANA}${T("acct.alerts")}</button>
+      <button type="button" data-acct="ajustes">${ICO_ENGRANAJE}${T("acct.settings")}</button>
       <button type="button" data-acct="logout">${T("acct.logout")}</button>` : "";
   }
   function pedirCuenta(motivo, accion) { cuenta.pendiente = accion || null; abrirAcceso("crear", motivo); }
@@ -1159,7 +1159,7 @@
   /* Ventana de acceso: entrar, crear cuenta, recuperar contraseña y poner una nueva */
   let modoAcceso = "entrar", motivoAcceso = "";
   function abrirAcceso(modo, motivo) {
-    avatarEdit = modo === "usuario" && cuenta.avatar ? { ...cuenta.avatar } : { ...AVA_DEFECTO }; verTodasExpr = false;
+    avatarEdit = (modo === "usuario" || modo === "ajustes") && cuenta.avatar ? { ...cuenta.avatar } : { ...AVA_DEFECTO }; verTodasExpr = false;
     modoAcceso = modo || "entrar"; motivoAcceso = motivo || "";
     pintarAcceso();
     const d = $("#acceso"); if (!d.open) { if (typeof d.showModal === "function") d.showModal(); else d.setAttribute("open", ""); }
@@ -1185,6 +1185,7 @@
         <button type="button" class="ava-tune" data-ava-abrir aria-controls="ava-editor" aria-expanded="false" aria-label="${esc(T("ava.title"))}" title="${esc(T("ava.title"))}">${ICO_AJUSTES}</button>
         <div class="ava-edit" id="ava-editor" role="dialog" aria-label="${esc(T("ava.title"))}" hidden>${editorAvatar()}</div></div>
       <p class="user-status" id="user-status" aria-live="polite">${T("auth.userHint")}</p>`;
+    if (m === "ajustes") return pintarAjustes(campoUsuario);
     let recordar = true; try { recordar = localStorage.getItem("radar-recordar") !== "no"; } catch (e) {}
     let campos = "";
     if (m === "entrar") campos = `
@@ -1224,6 +1225,68 @@
         ${sociales}${pie}
       </div>`;
   }
+  /* Configuración de la cuenta: nombre de usuario y avatar, email y contraseña */
+  const conPassword = () => (cuenta.usuario?.identities || []).some((i) => i.provider === "email") || cuenta.usuario?.app_metadata?.provider === "email";
+  function pintarAjustes(campoUsuario) {
+    const u = cuenta.usuario; if (!u) return;
+    const d = $("#acceso");
+    d.dataset.modo = "ajustes";
+    d.innerHTML = `<button class="close" type="button" aria-label="${T("sheet.close")}" data-cerrar>×</button>
+      <div class="auth-wrap settings">
+        <h2>${T("set.title")}</h2>
+        <section class="set-sec" aria-labelledby="set-perfil"><h3 id="set-perfil">${T("set.profile")}</h3>
+          <form class="auth-form" id="auth-form" novalidate>${campoUsuario(cuenta.perfil || "")}
+            <p class="auth-msg" id="auth-msg" role="status"></p>
+            <button class="btn auth-submit" type="submit">${T("set.saveBtn")}</button></form></section>
+        <section class="set-sec" aria-labelledby="set-email"><h3 id="set-email">${T("set.email")}</h3>
+          <form class="auth-form" id="form-email" novalidate>
+            <p class="set-now">${T("set.current", { e: "<b>" + esc(u.email || "") + "</b>" })}</p>
+            <label class="fld"><span class="fld-lab">${T("set.newEmail")}</span><input name="email" type="email" required autocomplete="email" placeholder="${esc(T("auth.emailPh"))}"></label>
+            <p class="auth-msg" id="email-msg" role="status"></p>
+            <button class="btn-ghost auth-submit" type="submit">${T("set.emailBtn")}</button></form></section>
+        <section class="set-sec" aria-labelledby="set-pass"><h3 id="set-pass">${T("set.pass")}</h3>
+          <form class="auth-form" id="form-pass" novalidate>
+            ${conPassword() ? `<label class="fld"><span class="fld-lab">${T("set.curPass")}</span>${campoPass("actual", "", "current-password")}</label>` : `<p class="set-now">${T("set.noPass")}</p>`}
+            <div class="fld-2"><label class="fld"><span class="fld-lab">${T("set.newPass")}</span>${campoPass("pass", T("auth.passPh"), "new-password")}</label>
+              <label class="fld"><span class="fld-lab">${T("auth.confirm")}</span>${campoPass("pass2", T("auth.passPh"), "new-password")}</label></div>
+            <p class="auth-msg" id="pass-msg" role="status"></p>
+            <button class="btn-ghost auth-submit" type="submit">${T("set.passBtn")}</button></form></section>
+      </div>`;
+  }
+  document.addEventListener("submit", async (e) => {
+    const f = e.target.closest("#form-email, #form-pass"); if (!f) return;
+    e.preventDefault();
+    const btn = f.querySelector('button[type="submit"]'), msg = f.querySelector(".auth-msg");
+    const decir = (txt, ok) => { msg.className = "auth-msg" + (ok ? " ok" : ""); msg.textContent = txt; };
+    if (f.id === "form-email") {
+      const nuevo = f.email.value.trim().toLowerCase();
+      if (!/^\S+@\S+\.\S+$/.test(nuevo)) { f.email.focus(); return decir(T("auth.err.email")); }
+      if (nuevo === (cuenta.usuario.email || "").toLowerCase()) return decir(T("set.emailSame"));
+      btn.disabled = true; decir(T("auth.wait"));
+      const { error } = await sb.auth.updateUser({ email: nuevo }, { emailRedirectTo: volverAqui() });
+      btn.disabled = false;
+      if (error) { console.error(error); return decir(/already|registered|exists/i.test(error.message) ? T("auth.err.exists") : errorAcceso(error)); }
+      f.reset(); return decir(T("set.emailSent", { e: nuevo }), true);
+    }
+    // Contraseña: se comprueba la actual antes de cambiarla
+    const actual = f.actual?.value || "", nueva = f.pass.value, rep = f.pass2.value;
+    if (conPassword() && !actual) { f.actual.focus(); return decir(T("set.passWrong")); }
+    if (nueva.length < 8) return decir(T("auth.err.short"));
+    if (nueva !== rep) return decir(T("auth.err.match"));
+    if (actual && actual === nueva) return decir(T("set.passSame"));
+    btn.disabled = true; decir(T("auth.wait"));
+    try {
+      if (conPassword()) {
+        const chk = await sb.auth.signInWithPassword({ email: cuenta.usuario.email, password: actual });
+        if (chk.error) return decir(T("set.passWrong"));
+      }
+      const { error } = await sb.auth.updateUser({ password: nueva });
+      if (error) return decir(/different|same/i.test(error.message) ? T("set.passSame") : errorAcceso(error));
+      f.reset(); decir(T("set.passSaved"), true);
+    } catch (er) { console.error(er); decir(T("auth.err.generic")); }
+    finally { btn.disabled = false; }
+  });
+  const esPerfil = () => modoAcceso === "usuario" || modoAcceso === "ajustes";
   let revisionUsuario = { v: "", libre: null }, temporizadorUsuario;
   async function usuarioLibre(v) {
     if (revisionUsuario.v === v && revisionUsuario.libre !== null) return revisionUsuario.libre;
@@ -1241,7 +1304,7 @@
     st.className = "user-status";
     if (!limpio) { st.textContent = T("auth.userHint"); return; }
     if (!USUARIO_OK.test(limpio)) { st.textContent = T("auth.userBad"); st.classList.add("bad"); return; }
-    if (limpio === cuenta.perfil && modoAcceso === "usuario") { st.textContent = T("auth.userFree"); st.classList.add("ok"); return; }
+    if (limpio === cuenta.perfil && esPerfil()) { st.textContent = T("auth.userFree"); st.classList.add("ok"); return; }
     st.textContent = T("auth.userChecking");
     temporizadorUsuario = setTimeout(async () => {
       try {
@@ -1271,7 +1334,7 @@
     const fallo = (k) => { msg.className = "auth-msg"; msg.textContent = T(k); };
     if (["entrar", "crear", "olvido"].includes(modoAcceso) && !/^\S+@\S+\.\S+$/.test(email || "")) { f.email.focus(); return fallo("auth.err.email"); }
     const usuario = f.usuario?.value.trim().toLowerCase() || "";
-    if ((modoAcceso === "crear" || modoAcceso === "usuario") && !USUARIO_OK.test(usuario)) { f.usuario.focus(); return fallo("auth.userBad"); }
+    if ((modoAcceso === "crear" || esPerfil()) && !USUARIO_OK.test(usuario)) { f.usuario.focus(); return fallo("auth.userBad"); }
     if ((modoAcceso === "crear" || modoAcceso === "nueva") && (pass || "").length < 8) return fallo("auth.err.short");
     if (modoAcceso === "entrar" && !pass) { f.pass.focus(); return; }
     if (modoAcceso === "crear" && pass !== f.pass2.value) return fallo("auth.err.match");
@@ -1280,7 +1343,7 @@
     btn.disabled = true; msg.className = "auth-msg"; msg.textContent = T("auth.wait");
     try {
       let r;
-      if ((modoAcceso === "crear" || (modoAcceso === "usuario" && usuario !== cuenta.perfil)) && !(await usuarioLibre(usuario))) { fallo("auth.userTaken"); f.usuario.focus(); return; }
+      if ((modoAcceso === "crear" || (esPerfil() && usuario !== cuenta.perfil)) && !(await usuarioLibre(usuario))) { fallo("auth.userTaken"); f.usuario.focus(); return; }
       if (modoAcceso === "entrar") r = await sb.auth.signInWithPassword({ email, password: pass });
       else if (modoAcceso === "crear") {
         const apellido = f.apellido?.value.trim() || "";
@@ -1292,7 +1355,7 @@
       } else if (modoAcceso === "olvido") {
         r = await sb.auth.resetPasswordForEmail(email, { redirectTo: volverAqui() });
         if (!r.error) { pintarAcceso(T("auth.resetSent", { e: esc(email) }), true); return; }
-      } else if (modoAcceso === "usuario") {
+      } else if (esPerfil()) {
         // El perfil ya existe (se crea con la cuenta): solo se cambia el nombre. Si faltara, se crea.
         const av = limpiarAvatar(avatarEdit);
         r = await sb.from("perfiles").update({ usuario, avatar: av }).eq("id", cuenta.usuario.id).select("usuario");
@@ -1301,8 +1364,9 @@
         if (r.error?.code === "23505") { revisionUsuario = { v: usuario, libre: false }; fallo("auth.userTaken"); return; }
         if (!r.error) {
           cuenta.perfil = usuario; comunidad.nombre = "@" + usuario;
-          pintarCuenta(); $("#acceso").close();
-          pintarCajaComentar();
+          pintarCuenta(); pintarCajaComentar();
+          if (modoAcceso === "ajustes") { msg.className = "auth-msg ok"; msg.textContent = T("set.saved"); }
+          else $("#acceso").close();
           return;
         }
       } else if (modoAcceso === "nueva") {
@@ -1341,6 +1405,7 @@
       cerrarMenuCuenta();
       const k = a.dataset.acct;
       if (k === "perfil") abrirAcceso("usuario");
+      else if (k === "ajustes") abrirAcceso("ajustes");
       else if (k === "login") { if ($("#alertas").open) $("#alertas").close(); abrirAcceso("entrar"); }
       else if (k === "logout") { await sb.auth.signOut(); }
       else if (k === "alerts") $("#campana").click();
