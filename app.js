@@ -633,8 +633,21 @@
   });
   $("#buscador").addEventListener("submit", (e) => {
     e.preventDefault(); clearTimeout(t); clearTimeout(tBajar); estado.q = $("#q").value.trim(); pintar();
-    if (esMovil()) { $("#q").blur(); requestAnimationFrame(() => bajarA(destinoBusqueda())); } // cierra el teclado para ver los resultados
+    if (esMovil()) { cerrarTeclado(); requestAnimationFrame(() => bajarA(destinoBusqueda())); }
     else $("#catalogo").scrollIntoView({ block: "start" });
+  });
+  // Cierra el teclado del celular. Se repite un instante después porque algunos teclados (iPhone, texto predictivo en Android) ignoran el primer intento.
+  function cerrarTeclado() {
+    const q = $("#q");
+    q.blur(); document.activeElement?.blur?.();
+    setTimeout(() => { if (document.activeElement === q) q.blur(); }, 50);
+  }
+  // La lupa del teclado envía «Enter»: se busca aquí mismo (el envío cierra el teclado), sin depender de cómo cada teclado envía el formulario
+  $("#q").addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" || e.isComposing || !esMovil()) return;
+    e.preventDefault();
+    const f = $("#buscador");
+    if (f.requestSubmit) f.requestSubmit(); else f.dispatchEvent(new Event("submit", { cancelable: true }));
   });
   $("#cats").addEventListener("click", (e) => { const b = e.target.closest("[data-cat]"); if (b) { estado.categoria = b.dataset.cat; pintar(); } });
   $("#stores")?.addEventListener("click", (e) => {
