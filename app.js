@@ -340,8 +340,9 @@
     const box = $("#everywhere");
     const q = estado.q;
     if (!q) { box.hidden = true; box.innerHTML = ""; return; }
-    // Solo el texto de la búsqueda (sin los botones de cada tienda)
-    box.innerHTML = `<p class="ew-title">${T("ew.title", { q: esc(q) })}</p>`;
+    // Texto de la búsqueda y botón para quitarla (en el móvil el buscador queda lejos, arriba)
+    box.innerHTML = `<p class="ew-title">${T("ew.title", { q: esc(q) })}</p>
+      <button class="ew-quitar" type="button" data-quitar-busqueda><span aria-hidden="true">×</span> ${T("search.clear")}</button>`;
     box.hidden = false;
   }
   /* Catálogo por tandas: con cientos de productos, pintar todos de golpe vuelve lenta la página en el móvil */
@@ -608,11 +609,20 @@
 
   /* Eventos */
   let t;
+  // En móvil y tablet los filtros van encima de los productos: la búsqueda baja directa a los resultados
+  const esMovil = () => matchMedia("(max-width: 1080px)").matches;
+  const destinoBusqueda = () => (esMovil() ? $(".results") : $("#catalogo"));
+  // Deja el destino justo debajo de la cabecera. Si se baja con el teclado cerrado la cabecera se esconde, así que no se descuenta.
+  function bajarA(el) {
+    const top = el.getBoundingClientRect().top;
+    const cab = top < 0 || document.activeElement === $("#q") ? Math.max(0, $(".top").getBoundingClientRect().bottom) : 0;
+    scrollTo({ top: scrollY + top - cab - 12, behavior: "smooth" });
+  }
   // Lleva la vista a los resultados (si ya están arriba en pantalla, no se mueve). El cursor sigue en el buscador.
   function irAResultados() {
-    const cat = $("#catalogo"), cab = $(".top").getBoundingClientRect().bottom;
-    const arriba = cat.getBoundingClientRect().top - cab;
-    if (arriba > 24 || arriba < -cat.offsetHeight + 200) cat.scrollIntoView({ block: "start" });
+    const el = destinoBusqueda(), cab = $(".top").getBoundingClientRect().bottom;
+    const arriba = el.getBoundingClientRect().top - cab;
+    if (arriba > 24 || arriba < -el.offsetHeight + 200) bajarA(el);
   }
   let tBajar;
   $("#q").addEventListener("input", (e) => {
@@ -622,8 +632,9 @@
     tBajar = setTimeout(() => { if (e.target.value.trim()) irAResultados(); }, 600);
   });
   $("#buscador").addEventListener("submit", (e) => {
-    e.preventDefault(); clearTimeout(tBajar); estado.q = $("#q").value.trim(); pintar();
-    $("#catalogo").scrollIntoView({ block: "start" });
+    e.preventDefault(); clearTimeout(t); clearTimeout(tBajar); estado.q = $("#q").value.trim(); pintar();
+    if (esMovil()) { $("#q").blur(); requestAnimationFrame(() => bajarA(destinoBusqueda())); } // cierra el teclado para ver los resultados
+    else $("#catalogo").scrollIntoView({ block: "start" });
   });
   $("#cats").addEventListener("click", (e) => { const b = e.target.closest("[data-cat]"); if (b) { estado.categoria = b.dataset.cat; pintar(); } });
   $("#stores")?.addEventListener("click", (e) => {
@@ -726,6 +737,11 @@
     const a = e.target.closest("[data-abrir]");
     if (a) { if ($("#comparador").open) $("#comparador").close(); return abrir(a.dataset.abrir); }
     if (e.target.closest("[data-limpiar]")) return limpiar();
+    if (e.target.closest("[data-quitar-busqueda]")) { // solo quita el texto buscado; categoría, tiendas y precio se quedan
+      clearTimeout(t); clearTimeout(tBajar);
+      estado.q = ""; $("#q").value = ""; pintar();
+      return bajarA(destinoBusqueda());
+    }
     const q = e.target.closest("[data-quitar]"); if (q) return alternarComparar(q.dataset.quitar);
     const x = e.target.closest("[data-cerrar]"); if (x) return x.closest("dialog").close();
     const m = e.target.closest("[data-mover]"); if (m) return verFoto(fotoActual + +m.dataset.mover);

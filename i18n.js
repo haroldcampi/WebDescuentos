@@ -84,6 +84,7 @@
       "results.emptyText": "Prueba a quitar alguno, o",
       "results.emptyBtn": "borra todos los filtros",
       "results.emptyQueryBtn": "borra la búsqueda",
+      "search.clear": "Quitar búsqueda",
       "ew.title": "Buscar <strong>“{q}”</strong> en todas las tiendas",
 
       "card.rating": "{r} de 5 · {n} reseñas",
@@ -533,6 +534,7 @@
       "results.emptyText": "Try removing one, or",
       "results.emptyBtn": "clear all filters",
       "results.emptyQueryBtn": "clear the search",
+      "search.clear": "Clear search",
       "ew.title": "Search <strong>“{q}”</strong> in every store",
 
       "card.rating": "{r} out of 5 · {n} reviews",
