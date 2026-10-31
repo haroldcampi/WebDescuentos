@@ -948,7 +948,7 @@
   });
 
   /* ===== Cuentas de usuario (Supabase Auth): favoritos y productos seguidos =====
-     Entrar con email y contraseña, Google o Apple. Google y Apple hay que activarlos en Supabase
+     Entrar con email y contraseña o con Google. Google hay que activarlo en Supabase
      (Authentication > Providers) con las claves de cada uno; ver LEEME.md. */
   // «Recordarme»: con la casilla marcada la sesión se guarda en el navegador; sin marcar, se borra al cerrar la pestaña
   const almacen = {
@@ -974,7 +974,6 @@
   const CORAZON = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.3a4.3 4.3 0 0 1 7.5 2.5C19.5 15.4 12 20 12 20Z"/></svg>';
   const CAMPANA = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15L6 16ZM10 20.5a2 2 0 0 0 4 0"/></svg>';
   const LOGO_GOOGLE = '<svg viewBox="0 0 18 18" width="18" height="18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62Z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18Z"/><path fill="#FBBC05" d="M3.97 10.72A5.4 5.4 0 0 1 3.68 9c0-.6.1-1.18.29-1.72V4.95H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.05l3.01-2.33Z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58Z"/></svg>';
-  const LOGO_APPLE = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M16.37 12.6c-.02-2.27 1.86-3.36 1.94-3.41-1.06-1.55-2.7-1.76-3.28-1.78-1.4-.14-2.73.82-3.44.82-.71 0-1.8-.8-2.96-.78-1.52.02-2.93.89-3.71 2.25-1.58 2.75-.4 6.81 1.14 9.04.75 1.09 1.65 2.31 2.82 2.27 1.13-.05 1.56-.73 2.93-.73 1.37 0 1.75.73 2.95.71 1.22-.02 1.99-1.11 2.73-2.2.86-1.26 1.22-2.49 1.24-2.55-.03-.01-2.37-.91-2.4-3.62ZM14.12 5.93c.62-.76 1.04-1.8.93-2.85-.9.04-1.99.6-2.63 1.35-.58.67-1.08 1.74-.95 2.77 1 .08 2.03-.51 2.65-1.27Z"/></svg>';
 
   function botonesCuenta(p, completo) {
     if (!sb) return "";
@@ -1132,7 +1131,7 @@
       if (cuenta.perfil || !comunidad.nombre) comunidad.nombre = nombreUsuario(cuenta.usuario);
     }
     pintarCuenta(); pintarBotonesCuenta(); pintarCampana(); pintarCajaComentar();
-    // Quien entra sin nombre de usuario (Google, Apple o cuentas antiguas) lo elige ahora
+    // Quien entra sin nombre de usuario (Google o cuentas antiguas) lo elige ahora
     if (cuenta.usuario && !cuenta.perfil && !pf_preguntado && !$("#acceso").open) { pf_preguntado = true; abrirAcceso("usuario"); }
     if (estado.favoritos) pintar(true);
     if ($("#alertas").open) pintarAlertas();
@@ -1248,8 +1247,7 @@
     else campos = campoPildora(ICO_CANDADO, campoPass("pass", T("auth.newPass"), "new-password").replace("<input ", `<input aria-label="${esc(T("auth.newPass"))}" `)) + `<p class="auth-hint">${T("auth.passHint")}</p>`;
     const sociales = m === "entrar" || m === "crear" ? `<p class="auth-or">${T(m === "crear" ? "auth.orUp" : "auth.orIn")}</p>
       <div class="auth-social">
-        <button class="soc" type="button" data-oauth="google">${LOGO_GOOGLE}<span>Google</span></button>
-        <button class="soc apple" type="button" data-oauth="apple">${LOGO_APPLE}<span>Apple</span></button></div>` : "";
+        <button class="soc" type="button" data-oauth="google">${LOGO_GOOGLE}<span>Google</span></button></div>` : "";
     const pie = m === "entrar" ? `<p class="auth-switch">${T("auth.toUp")} <button class="auth-link" type="button" data-auth-modo="crear">${T("auth.toUpBtn")}</button></p>`
       : m === "crear" ? `<p class="auth-switch">${T("auth.toIn")} <button class="auth-link" type="button" data-auth-modo="entrar">${T("auth.toInBtn")}</button></p>`
       : m === "olvido" ? `<p class="auth-switch"><button class="auth-link" type="button" data-auth-modo="entrar">${T("auth.back")}</button></p>` : "";
@@ -1359,7 +1357,7 @@
   // Traduce los errores de Supabase a mensajes claros
   function errorAcceso(e, proveedor) {
     const t = String(e?.message || e || "").toLowerCase();
-    if (/provider is not enabled|unsupported provider/.test(t)) return T("auth.err.provider", { p: proveedor === "apple" ? "Apple" : "Google" });
+    if (/provider is not enabled|unsupported provider/.test(t)) return T("auth.err.provider", { p: "Google" });
     if (/invalid login credentials/.test(t)) return T("auth.err.creds");
     if (/already registered|already been registered/.test(t)) return T("auth.err.exists");
     if (/email not confirmed/.test(t)) return T("auth.err.confirm");
@@ -1440,7 +1438,7 @@
     const o = e.target.closest("[data-oauth]");
     if (o) {
       const msg = $("#auth-msg"), prov = o.dataset.oauth;
-      // Google y Apple se abren en una ventanita: la web se queda donde está.
+      // Google se abre en una ventanita: la web se queda donde está.
       // Si el navegador bloquea la ventana, se usa la redirección normal.
       const ventana = window.open("", "radar-login", "width=500,height=640,left=" + Math.max(0, (screen.width - 500) / 2) + ",top=" + Math.max(0, (screen.height - 640) / 2));
       try {
@@ -1480,7 +1478,7 @@
     if (claveSinCambiar && sb) { claveSinCambiar = false; sb.auth.signOut({ scope: "local" }).catch((e) => console.error(e)); }
   });
 
-  // Ventanita de Google/Apple: al terminar, pasa la sesión a la web principal y se cierra
+  // Ventanita de Google: al terminar, pasa la sesión a la web principal y se cierra
   const enVentanita = new URLSearchParams(location.search).has("popup") && window.opener && window.opener.location.origin === location.origin;
   addEventListener("message", async (e) => {
     if (!sb || e.origin !== location.origin || e.data?.tipo !== "radar-sesion") return;
@@ -1523,7 +1521,7 @@
       cuenta.usuario = sesion?.user || null;
       if (evento === "PASSWORD_RECOVERY" || (evento === "SIGNED_IN" && vueltaRecuperar)) { vueltaRecuperar = false; claveSinCambiar = true; abrirAcceso("nueva"); }
       else if (evento === "SIGNED_IN" && $("#acceso").open && modoAcceso !== "nueva") $("#acceso").close();
-      // Al volver de Google/Apple o del email, quita el código de la dirección
+      // Al volver de Google o del email, quita el código de la dirección
       if (/[?&](code|error_description)=/.test(location.search)) { const u = new URL(location.href); ["code", "error", "error_code", "error_description", "recuperar"].forEach((k) => u.searchParams.delete(k)); history.replaceState(null, "", u); }
       if (enVentanita && sesion && evento === "SIGNED_IN") {
         window.opener.postMessage({ tipo: "radar-sesion", access_token: sesion.access_token, refresh_token: sesion.refresh_token }, location.origin);

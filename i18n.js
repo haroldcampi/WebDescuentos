@@ -240,7 +240,6 @@
       "auth.reasonFav": "Crea una cuenta o entra para guardar productos en favoritos.",
       "auth.reasonFollow": "Crea una cuenta o entra para recibir avisos cuando baje el precio.",
       "auth.google": "Continuar con Google",
-      "auth.apple": "Continuar con Apple",
       "auth.or": "o con tu email",
       "auth.name": "Nombre",
       "auth.email": "Email",
@@ -452,7 +451,7 @@
       "set.passSaved": "Contraseña cambiada.",
       "set.passWrong": "La contraseña actual no es correcta.",
       "set.passSame": "La nueva contraseña tiene que ser distinta de la actual.",
-      "set.noPass": "Entraste con Google o Apple. Crea una contraseña si también quieres entrar con tu email.",
+      "set.noPass": "Entraste con Google. Crea una contraseña si también quieres entrar con tu email.",
       "auth.linkExpired": "Ese enlace ya se usó o caducó. Prueba a entrar con tu email y contraseña; si tu cuenta aún no está confirmada, regístrate otra vez para recibir un enlace nuevo."
     },
 
@@ -690,7 +689,6 @@
       "auth.reasonFav": "Create an account or sign in to save favorites.",
       "auth.reasonFollow": "Create an account or sign in to get price-drop alerts.",
       "auth.google": "Continue with Google",
-      "auth.apple": "Continue with Apple",
       "auth.or": "or with your email",
       "auth.name": "Name",
       "auth.email": "Email",
@@ -902,7 +900,7 @@
       "set.passSaved": "Password changed.",
       "set.passWrong": "The current password is incorrect.",
       "set.passSame": "The new password must be different from the current one.",
-      "set.noPass": "You signed in with Google or Apple. Create a password if you also want to sign in with your email.",
+      "set.noPass": "You signed in with Google. Create a password if you also want to sign in with your email.",
       "auth.linkExpired": "That link was already used or has expired. Try signing in with your email and password; if your account isn't confirmed yet, sign up again to get a new link."
     }
   };
