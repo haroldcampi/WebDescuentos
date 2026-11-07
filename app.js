@@ -205,7 +205,9 @@
       <button class="vote-btn down" type="button" data-votar="-1" aria-pressed="${mio === -1}" aria-label="${esc(T("vote.down"))}" title="${esc(T("vote.down"))}">${PULGAR_ABA}<span>${T(completo ? "vote.down" : "vote.downShort")}</span></button></div>`;
     return completo ? `<section class="vote-block"><h3>${T("vote.title")}</h3>${caja}</section>` : caja;
   }
-  const enlace = (p, texto) => `<a class="cta" href="${esc(p.enlace)}" target="_blank" rel="sponsored nofollow noopener">${texto} ${FLECHA}</a>`;
+  // Solo se enlazan direcciones http(s): un feed con "javascript:..." no puede ejecutar código
+  const urlSegura = (u) => (/^https?:\/\//i.test(String(u || "").trim()) ? String(u).trim() : "#");
+  const enlace = (p, texto) => `<a class="cta" href="${esc(urlSegura(p.enlace))}" target="_blank" rel="sponsored nofollow noopener">${texto} ${FLECHA}</a>`;
 
   /* Filtros */
   function filtrar() {
@@ -883,12 +885,13 @@
     comunidad.mios[id] = nuevo; comunidad.total[id] = (comunidad.total[id] || 0) - antes + nuevo; pintarVotos(id);
     try {
       const total = await api("rpc/votar", { p_producto: id, p_visitante: comunidad.visitante, p_valor: nuevo });
+      if (total === null) throw new Error("limite");
       comunidad.total[id] = Number(total) || 0; pintarVotos(id);
       try { localStorage.setItem("radar-mis-votos", JSON.stringify(comunidad.mios)); } catch (e) {}
     } catch (e) {
       console.error(e);
       comunidad.mios[id] = antes; comunidad.total[id] = (comunidad.total[id] || 0) - nuevo + antes; pintarVotos(id);
-      alert(T("vote.error"));
+      alert(e?.message === "limite" ? T("auth.err.rate") : T("vote.error"));
     }
   }
   const fechaHora = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleString(i18n.locale, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }); };
@@ -922,8 +925,10 @@
     if (!texto) return f.texto.focus();
     btn.disabled = true; msg.textContent = T("com.sending");
     try {
-      const { error } = await sb.rpc("comentar", { p_producto: f.dataset.id, p_texto: texto });
+      const { data, error } = await sb.rpc("comentar", { p_producto: f.dataset.id, p_texto: texto });
       if (error) throw error;
+      if (data === "limite") throw new Error("demasiados");
+      if (data && data !== "ok") throw new Error(data);
       f.texto.value = ""; msg.textContent = "";
       await cargarComentarios(f.dataset.id);
     } catch (er) { console.error(er); msg.textContent = /demasiados/.test(er?.message || "") ? T("auth.err.rate") : T("com.error"); }
@@ -964,7 +969,7 @@
       const q = new URLSearchParams(location.search);
       if (!q.has("code")) return false;
       if (q.has("recuperar")) return true;
-      return [localStorage, sessionStorage].some((s) => Object.keys(s).some((k) => k.endsWith("-code-verifier") && String(s.getItem(k)).endsWith("/PASSWORD_RECOVERY")));
+      return [localStorage, sessionStorage].some((s) => Object.keys(s).some((k) => k.endsWith("-code-verifier") && /\/(PASSWORD_RECOVERY|recovery)"?$/.test(String(s.getItem(k)))));
     } catch (e) { return false; }
   })();
   let claveSinCambiar = false; // sesión abierta solo para poner la contraseña nueva
@@ -1033,7 +1038,7 @@
   function limpiarAvatar(c) {
     c = c && typeof c === "object" ? c : {};
     return {
-      forma: c.forma in AVA_FORMAS ? c.forma : "auto",
+      forma: Object.prototype.hasOwnProperty.call(AVA_FORMAS, c.forma) ? c.forma : "auto",
       expresion: AVA_EXPRESIONES.includes(c.expresion) ? c.expresion : "idle",
       fondo: AVA_FONDOS.includes(c.fondo) ? c.fondo : "squircle",
       tono: AVA_TONOS.includes(Number(c.tono)) ? Number(c.tono) : "auto"
@@ -1052,6 +1057,8 @@
     if (dibujarAvatar && k) { try { return `<span class="ava${cls ? " " + cls : ""}" aria-hidden="true">${dibujarAvatar(k, opcionesAvatar(cfg))}</span>`; } catch (e) { console.error(e); } }
     return `<span class="ava ava-ini${cls ? " " + cls : ""}" aria-hidden="true">${esc((k[0] || "?").toUpperCase())}</span>`;
   }
+  // Igual que exige Supabase (config.toml): 8 caracteres o más, con letras y números
+  const passFuerte = (p) => typeof p === "string" && p.length >= 8 && /[A-Za-z]/.test(p) && /\d/.test(p);
   const USUARIO_OK = /^[a-z0-9_][a-z0-9_.]{1,18}[a-z0-9_]$/;
   const nombreUsuario = (u) => (cuenta.perfil ? "@" + cuenta.perfil : (u && (u.user_metadata?.nombre || u.user_metadata?.full_name || u.user_metadata?.name || (u.email || "").split("@")[0])) || "");
   const semillaAvatar = () => cuenta.perfil || cuenta.usuario?.id || "";
@@ -1311,7 +1318,7 @@
     // Contraseña: se comprueba la actual antes de cambiarla
     const actual = f.actual?.value || "", nueva = f.pass.value, rep = f.pass2.value;
     if (conPassword() && !actual) { f.actual.focus(); return decir(T("set.passWrong")); }
-    if (nueva.length < 8) return decir(T("auth.err.short"));
+    if (!passFuerte(nueva)) return decir(T("auth.err.short"));
     if (nueva !== rep) return decir(T("auth.err.match"));
     if (actual && actual === nueva) return decir(T("set.passSame"));
     btn.disabled = true; decir(T("auth.wait"));
@@ -1375,7 +1382,7 @@
     if (["entrar", "crear", "olvido"].includes(modoAcceso) && !/^\S+@\S+\.\S+$/.test(email || "")) { f.email.focus(); return fallo("auth.err.email"); }
     const usuario = f.usuario?.value.trim().toLowerCase() || "";
     if ((modoAcceso === "crear" || esPerfil()) && !USUARIO_OK.test(usuario)) { f.usuario.focus(); return fallo("auth.userBad"); }
-    if ((modoAcceso === "crear" || modoAcceso === "nueva") && (pass || "").length < 8) return fallo("auth.err.short");
+    if ((modoAcceso === "crear" || modoAcceso === "nueva") && !passFuerte(pass)) return fallo("auth.err.short");
     if (modoAcceso === "entrar" && !pass) { f.pass.focus(); return; }
     if (modoAcceso === "crear" && pass !== f.pass2.value) return fallo("auth.err.match");
     if (modoAcceso === "crear" && !f.terminos.checked) return fallo("auth.err.terms");
@@ -1479,7 +1486,8 @@
   });
 
   // Ventanita de Google: al terminar, pasa la sesión a la web principal y se cierra
-  const enVentanita = new URLSearchParams(location.search).has("popup") && window.opener && window.opener.location.origin === location.origin;
+  // Si nos abre otra web, leer su dirección da error: en ese caso no es nuestra ventanita
+  const enVentanita = (() => { try { return new URLSearchParams(location.search).has("popup") && !!window.opener && window.opener.location.origin === location.origin; } catch (e) { return false; } })();
   addEventListener("message", async (e) => {
     if (!sb || e.origin !== location.origin || e.data?.tipo !== "radar-sesion") return;
     const { error } = await sb.auth.setSession({ access_token: e.data.access_token, refresh_token: e.data.refresh_token });
@@ -1592,9 +1600,10 @@
     if (!/^https:\/\/\S+\.\S+/.test(datos.url)) { msg.textContent = T("share.badUrl"); return f.url.focus(); }
     if (datos.titulo.length < 3) { msg.textContent = T("share.badName"); return f.titulo.focus(); }
     btn.disabled = true; msg.textContent = T("auth.wait");
-    const { error } = await sb.from("ofertas_enviadas").insert(datos);
+    const { data, error } = await sb.from("ofertas_enviadas").insert(datos).select("id");
     btn.disabled = false;
     if (error) { console.error(error); msg.textContent = /demasiadas/.test(error.message) ? T("share.limit") : T("auth.err.generic"); return; }
+    if (!data || !data.length) { msg.textContent = T("share.limit"); return; }
     f.reset(); msg.className = "auth-msg ok"; msg.textContent = T("share.thanks");
   });
 

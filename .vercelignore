@@ -1,0 +1,8 @@
+# Archivos que no se publican (documentación interna, base de datos y herramientas)
+LEEME.md
+README.md
+/supabase/
+importar-feed.js
+*.csv
+.DS_Store
+.env*

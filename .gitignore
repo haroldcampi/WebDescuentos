@@ -1,0 +1,16 @@
+# Sistema
+.DS_Store
+
+# Claves y configuración local: nunca al repositorio
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Herramientas
+node_modules/
+.vercel/
+
+# Feeds descargados de las redes de afiliados
+*.csv

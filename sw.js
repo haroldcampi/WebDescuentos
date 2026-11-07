@@ -1,8 +1,8 @@
 /* Service worker: permite instalar la web como app y abrirla sin conexión.
    Siempre pide primero a la red (precios al día); si no hay conexión, usa la última copia guardada.
    Si cambias mucho la web, sube el número de VERSION para limpiar copias viejas. */
-const VERSION = "radar-v2";
-const BASE = ["./", "index.html", "styles.css", "app.js", "i18n.js", "productos.js", "manifest.webmanifest", "icon.svg", "icon-192.png"];
+const VERSION = "radar-v3";
+const BASE = ["./", "index.html", "styles.css", "app.js", "i18n.js", "productos.js", "manifest.webmanifest", "icon.svg", "icon-192.png", "vendor/supabase-2.118.0.min.js"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(BASE)).then(() => self.skipWaiting()));

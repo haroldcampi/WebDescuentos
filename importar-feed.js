@@ -58,7 +58,7 @@ function convertir(archivo) {
 
   return filas.map((f, n) => {
     const v = (k) => (idx[k] >= 0 ? (f[idx[k]] || "").trim() : "");
-    const imagenes = colsImg.flatMap((i) => (f[i] || "").split(/[|,;]\s*(?=https?:)/)).map((s) => s.trim()).filter((s) => /^https?:\/\//.test(s));
+    const imagenes = colsImg.flatMap((i) => (f[i] || "").split(/[|,;]\s*(?=https?:)/)).map((s) => s.trim()).filter((s) => /^https:\/\/[^\s"'<>`]+$/i.test(s));
     let precio = num(v("precio")), anterior = num(v("precioAnterior"));
     if (anterior !== null && precio !== null && anterior <= precio) anterior = null;
     return {
@@ -68,7 +68,8 @@ function convertir(archivo) {
       categoria: (v("categoria").split(/>|\//).pop() || "Otros").trim(),
       precio, precioAnterior: anterior,
       imagenes: [...new Set(imagenes)],
-      enlace: v("enlace"),
+      // Solo enlaces https sin espacios: un feed manipulado no puede colar "javascript:..."
+      enlace: /^https:\/\/[^\s"'<>`]+$/i.test(v("enlace")) ? v("enlace") : "",
       ...(v("marca") ? { marca: v("marca") } : {}),
       actualizado: hoy
     };

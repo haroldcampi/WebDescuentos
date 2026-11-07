@@ -2,6 +2,10 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
+<!-- SEGURIDAD (CSP): solo se ejecuta JavaScript de esta web, de Google AdSense y el script del tema de abajo.
+     Si añades un script en línea o de otro dominio, añádelo aquí o el navegador lo bloqueará. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Rad494NBiaPTZXBrjJk0r6gk3tGQ+8pcBya/anAXmrw=' https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.gstatic.com https://*.doubleclick.net https://*.googleadservices.com https://*.adtrafficquality.google https://fundingchoicesmessages.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://xvzmxhvsmuhrqiymvzoe.supabase.co wss://xvzmxhvsmuhrqiymvzoe.supabase.co https://*.google.com https://*.googlesyndication.com https://*.doubleclick.net https://*.adtrafficquality.google https://*.googleadservices.com https://fundingchoicesmessages.google.com; frame-src https:; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Radar de Ofertas · rebajas de 10 tiendas comparadas</title>
 <meta name="description" content="Las mejores ofertas de Amazon, Walmart, Target, Best Buy, eBay, Etsy, Temu, AliExpress, Home Depot y Lowe’s en un solo lugar, con precio, descuento y fotos de cada producto.">
@@ -220,7 +224,7 @@
 <dialog id="comparador" aria-label="Comparar productos" data-i18n-attr="aria-label:cmp.aria"></dialog>
 <!--/CUERPO-->
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="vendor/supabase-2.118.0.min.js"></script>
 <script src="i18n.js?v=20261031a"></script>
 <script src="productos.js?v=20261031a"></script>
 <script src="app.js?v=20261031a"></script>

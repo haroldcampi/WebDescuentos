@@ -96,3 +96,18 @@ La web está en español y en inglés. El botón **ES / EN** de la cabecera camb
 ## Rendimiento con catálogos grandes
 
 El catálogo muestra las ofertas de 24 en 24, con un botón «Ver N ofertas más». Así la web sigue rápida en el móvil aunque cargues cientos de productos desde feeds. Para cambiar el número de cada tanda, edita `POR_TANDA` en `app.js`.
+
+## Seguridad (noviembre 2026)
+
+- **Claves**: en `app.js` solo va la clave pública «anon» de Supabase, que está hecha para estar en el navegador. La seguridad la ponen los permisos de la base de datos. La clave `service_role` (o `sb_secret_…`) **nunca** debe ir en ningún archivo de la web ni del repositorio.
+- **Base de datos**: todas las tablas están cerradas. La web solo lee lo público (comentarios visibles y puntuaciones) y escribe a través de funciones que validan los datos. Cada cuenta solo ve sus favoritos, alertas, perfil y ofertas. Las tablas y funciones nuevas empiezan cerradas: cada migración tiene que dar los permisos a mano.
+- **Límites**: votos (120 por hora y 6 al día por oferta, por IP), comentarios (3 cada 10 min y 20 al día por cuenta, 30 al día por IP), ofertas (5 al día por cuenta, 15 por IP) y comprobación de nombres (60 cada 10 min por IP). Los de entrar, registrarse y emails los pone Supabase Auth.
+- **Vigilar** (Supabase > SQL Editor):
+  - `select * from seguridad.resumen;` intentos bloqueados en 24 h, por tipo e IP.
+  - `select * from seguridad.actividad_cuentas;` registros y peticiones de contraseña por IP en 24 h.
+  - Supabase > Logs > Auth para intentos de entrada fallidos.
+- **Contraseñas**: las guarda Supabase con bcrypt (la web nunca las ve guardadas). Mínimo 8 caracteres con letras y números. Los enlaces de recuperación caducan a los 30 minutos y sirven una sola vez.
+- **Navegador**: `index.html` lleva una política de contenido (CSP) que solo deja ejecutar JavaScript de esta web y de Google AdSense. Si añades un script en línea o de otro dominio, añádelo a esa etiqueta `<meta http-equiv="Content-Security-Policy">` o el navegador lo bloqueará. Si cambias el script del tema (el `<script>` corto del principio), recalcula su `sha256`.
+- **Cabeceras** (Vercel): `vercel.json` fuerza https, impide meter la web en marcos de otras webs y añade el resto de cabeceras de seguridad. `.vercelignore` deja fuera de la publicación este LEEME, la carpeta `supabase` y el importador.
+- **supabase-js** se sirve desde `vendor/` (no desde un CDN externo). Para actualizarlo: `npm view @supabase/supabase-js version`, descarga `dist/umd/supabase.js` de esa versión a `vendor/`, cambia el nombre en `index.html` y `sw.js`, y sube `VERSION` en `sw.js`.
+- **Aplicar cambios de Supabase**: las migraciones con `supabase db push`; los ajustes de `[auth]` de `supabase/config.toml` con `supabase config push` (o a mano en Authentication > Settings).
