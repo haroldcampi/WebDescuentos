@@ -2,9 +2,9 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<!-- SEGURIDAD (CSP): solo se ejecuta JavaScript de esta web, de Google AdSense y el script del tema de abajo.
-     Si añades un script en línea o de otro dominio, añádelo aquí o el navegador lo bloqueará. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Rad494NBiaPTZXBrjJk0r6gk3tGQ+8pcBya/anAXmrw=' https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.gstatic.com https://*.doubleclick.net https://*.googleadservices.com https://*.adtrafficquality.google https://fundingchoicesmessages.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://xvzmxhvsmuhrqiymvzoe.supabase.co wss://xvzmxhvsmuhrqiymvzoe.supabase.co https://*.google.com https://*.googlesyndication.com https://*.doubleclick.net https://*.adtrafficquality.google https://*.googleadservices.com https://fundingchoicesmessages.google.com; frame-src https:; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<!-- SEGURIDAD (CSP): la política de contenido está en vercel.json (cabecera Content-Security-Policy).
+     Si añades un script en línea o de otro dominio, añádelo allí o el navegador lo bloqueará.
+     Si cambias el script del tema de abajo, recalcula su sha256 y cámbialo en vercel.json. -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Radar de Ofertas · rebajas de 10 tiendas comparadas</title>
@@ -218,11 +218,11 @@
   </a>
 </footer>
 
-<dialog id="ficha" aria-label="Ficha del producto" data-i18n-attr="aria-label:sheet.aria"></dialog>
-<dialog id="acceso" aria-label="Mi cuenta" data-i18n-attr="aria-label:acct.menu"></dialog>
-<dialog id="compartir" aria-label="Comparte una oferta" data-i18n-attr="aria-label:share.title"></dialog>
-<dialog id="alertas" aria-label="Mis alertas" data-i18n-attr="aria-label:alert.title"></dialog>
-<dialog id="comparador" aria-label="Comparar productos" data-i18n-attr="aria-label:cmp.aria"></dialog>
+<dialog closedby="any" id="ficha" aria-label="Ficha del producto" data-i18n-attr="aria-label:sheet.aria"></dialog>
+<dialog closedby="any" id="acceso" aria-label="Mi cuenta" data-i18n-attr="aria-label:acct.menu"></dialog>
+<dialog closedby="any" id="compartir" aria-label="Comparte una oferta" data-i18n-attr="aria-label:share.title"></dialog>
+<dialog closedby="any" id="alertas" aria-label="Mis alertas" data-i18n-attr="aria-label:alert.title"></dialog>
+<dialog closedby="any" id="comparador" aria-label="Comparar productos" data-i18n-attr="aria-label:cmp.aria"></dialog>
 <!--/CUERPO-->
 
 <script src="vendor/supabase-2.118.0.min.js"></script>

@@ -14,3 +14,11 @@ node_modules/
 
 # Feeds descargados de las redes de afiliados
 *.csv
+
+# Skills de agentes instaladas localmente
+.agents/
+.claude/skills/
+skills-lock.json
+
+# Informes de auditoría de seguridad: nunca al repositorio (es público)
+audits/

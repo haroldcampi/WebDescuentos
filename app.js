@@ -764,7 +764,16 @@
     const m = e.target.closest("[data-mover]"); if (m) return verFoto(fotoActual + +m.dataset.mover);
     const f = e.target.closest("[data-foto]"); if (f) return verFoto(+f.dataset.foto);
   });
-  document.querySelectorAll("dialog").forEach((d) => d.addEventListener("click", (e) => { if (e.target === d) d.close(); }));
+  // Clic fuera para cerrar: lo hace el navegador con <dialog closedby="any"> (index.html).
+  // Solo donde no existe closedby (Safari), se imita midiendo dónde se pulsa y se suelta: fuera del recuadro.
+  if (!("closedBy" in HTMLDialogElement.prototype)) {
+    const fuera = (e, d) => { const r = d.getBoundingClientRect(); return e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom; };
+    document.querySelectorAll('dialog[closedby="any"]').forEach((d) => {
+      let pulsoFuera = false;
+      d.addEventListener("pointerdown", (e) => { pulsoFuera = fuera(e, d); });
+      d.addEventListener("pointerup", (e) => { if (pulsoFuera && fuera(e, d)) d.close(); });
+    });
+  }
   /* Compartir un producto: enlace directo, por email o copiándolo */
   const ICO_SOBRE = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg>';
   const ICO_ENLACE = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/></svg>';
@@ -833,6 +842,8 @@
   /* Entrada de cada sección al aparecer en pantalla */
   function entradas() {
     const els = document.querySelectorAll("[data-in]");
+    // Navegadores sin sibling-index(): se numeran los hijos para el retraso escalonado (styles.css)
+    if (!CSS.supports("transition-delay: calc(sibling-index() * 1ms)")) els.forEach((el) => [...el.children].forEach((h, i) => h.style.setProperty("--sibling-index", i + 1)));
     const ver = (el) => el.classList.add("in");
     if (!("IntersectionObserver" in window)) return els.forEach(ver);
     const io = new IntersectionObserver((ents) => ents.forEach((en) => { if (en.isIntersecting) { ver(en.target); io.unobserve(en.target); } }), { threshold: 0.05 });
@@ -901,7 +912,7 @@
       const lista = await api(`comentarios?select=id,nombre,avatar,texto,creado&producto_id=eq.${encodeURIComponent(id)}&order=creado.desc&limit=50`);
       if ($("#ficha").dataset.id !== id) return;
       $("#com-title").textContent = lista.length ? T("com.titleN", { n: lista.length }) : T("com.title");
-      caja.innerHTML = lista.length ? lista.map((c) => `<article class="com">${avatar(c.nombre, "ava-sm", c.avatar)}<div class="com-body"><header><b>@${esc(c.nombre)}</b><time datetime="${esc(c.creado)}">${esc(fechaHora(c.creado))}</time></header><p>${esc(c.texto)}</p></div></article>`).join("") : `<p class="com-note">${T("com.empty")}</p>`;
+      caja.innerHTML = lista.length ? lista.map((c) => `<article class="com">${avatar(c.nombre, "ava-sm", c.avatar)}<div class="com-body"><header><b>@${esc(c.nombre)}</b><time datetime="${esc(c.creado)}">${esc(fechaHora(c.creado))}</time></header><p>${esc(c.texto)}</p>${sb && c.nombre !== cuenta.perfil ? `<button class="linkbtn com-rep" type="button" data-reportar="${esc(c.id)}">${T("com.report")}</button>` : ""}</div></article>`).join("") : `<p class="com-note">${T("com.empty")}</p>`;
     } catch (e) { console.error(e); caja.innerHTML = `<p class="com-note">${T("com.loadError")}</p>`; }
   }
   /* Para comentar hace falta cuenta y nombre de usuario. En el comentario solo se ve el @usuario, nunca el email:
@@ -933,6 +944,27 @@
       await cargarComentarios(f.dataset.id);
     } catch (er) { console.error(er); msg.textContent = /demasiados/.test(er?.message || "") ? T("auth.err.rate") : T("com.error"); }
     btn.disabled = false;
+  });
+
+  /* Reportar un comentario: hace falta cuenta y se confirma con un segundo toque.
+     Con 3 reportes de cuentas y conexiones distintas, la base de datos lo oculta sola. */
+  document.addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-reportar]"); if (!b || b.disabled) return;
+    if (!cuenta.usuario) return pedirCuenta("com.reportReason");
+    if (!b.dataset.confirmar) { b.dataset.confirmar = "1"; b.textContent = T("com.reportConfirm"); return; }
+    b.disabled = true; b.textContent = T("com.sending");
+    try {
+      const { data, error } = await sb.rpc("reportar_comentario", { p_id: Number(b.dataset.reportar) });
+      if (error) throw error;
+      if (data === "oculto") { b.closest(".com")?.remove(); return; }
+      if (data === "ok" || data === "ya" || data === "invalido") { b.textContent = T("com.reported"); return; }
+      if (data === "login") { b.disabled = false; delete b.dataset.confirmar; b.textContent = T("com.report"); return pedirCuenta("com.reportReason"); }
+      throw new Error(data === "limite" ? "demasiados" : String(data));
+    } catch (er) {
+      console.error(er);
+      b.disabled = false; delete b.dataset.confirmar;
+      b.textContent = /demasiados/.test(er?.message || "") ? T("auth.err.rate") : T("com.reportError");
+    }
   });
 
   /* ===== Mis alertas: los productos que sigue el usuario (bajadas de precio) ===== */
@@ -1312,7 +1344,8 @@
       btn.disabled = true; decir(T("auth.wait"));
       const { error } = await sb.auth.updateUser({ email: nuevo }, { emailRedirectTo: volverAqui() });
       btn.disabled = false;
-      if (error) { console.error(error); return decir(/already|registered|exists/i.test(error.message) ? T("auth.err.exists") : errorAcceso(error)); }
+      // SEGURIDAD: si el email nuevo ya es de otra cuenta, el mensaje es el mismo que si estuviera libre
+      if (error && !/already|registered|exists/i.test(error.message)) { console.error(error); return decir(errorAcceso(error)); }
       f.reset(); return decir(T("set.emailSent", { e: nuevo }), true);
     }
     // Contraseña: se comprueba la actual antes de cambiarla
@@ -1366,7 +1399,6 @@
     const t = String(e?.message || e || "").toLowerCase();
     if (/provider is not enabled|unsupported provider/.test(t)) return T("auth.err.provider", { p: "Google" });
     if (/invalid login credentials/.test(t)) return T("auth.err.creds");
-    if (/already registered|already been registered/.test(t)) return T("auth.err.exists");
     if (/email not confirmed/.test(t)) return T("auth.err.confirm");
     if (/password should be at least|weak password/.test(t)) return T("auth.err.short");
     if (/rate limit|too many/.test(t) || e?.status === 429) return T("auth.err.rate");
@@ -1396,9 +1428,10 @@
         const apellido = f.apellido?.value.trim() || "";
         const datos = { usuario, avatar: limpiarAvatar(avatarEdit), ...(nombre || apellido ? { nombre, apellido, full_name: [nombre, apellido].filter(Boolean).join(" ") } : {}) };
         r = await sb.auth.signUp({ email, password: pass, options: { data: datos, emailRedirectTo: volverAqui() } });
-        // Supabase no da error si el email ya existe: devuelve un usuario sin identidades
-        if (!r.error && r.data?.user && !(r.data.user.identities || []).length) r = { error: { message: "already registered" } };
-        else if (!r.error && !r.data.session) { pintarAcceso(T("auth.checkEmail", { e: esc(email) }), true); return; }
+        // SEGURIDAD: si el email ya tiene cuenta (Supabase devuelve un usuario sin identidades o un error «already registered»),
+        // se muestra el MISMO mensaje que en un registro nuevo, para que nadie pueda averiguar qué emails están registrados.
+        const yaExiste = (!r.error && r.data?.user && !(r.data.user.identities || []).length) || /already registered|already been registered/i.test(r.error?.message || "");
+        if (yaExiste || (!r.error && !r.data.session)) { pintarAcceso(T("auth.checkEmail", { e: esc(email) }), true); return; }
       } else if (modoAcceso === "olvido") {
         r = await sb.auth.resetPasswordForEmail(email, { redirectTo: volverAqui() + "?recuperar=1" });
         if (!r.error) { pintarAcceso(T("auth.resetSent", { e: esc(email) }), true); return; }

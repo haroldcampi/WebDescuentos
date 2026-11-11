@@ -81,14 +81,28 @@ if (!archivos.length) { console.log("Uso: node importar-feed.js feed1.csv [feed2
 const todos = archivos.flatMap(convertir);
 const salida = path.join(__dirname, "productos.js");
 
-/* Historial de precios: se conserva el de la versión anterior de productos.js y se añade el precio de hoy.
-   Así, ejecutando este script cada día, la web va teniendo su gráfica de precios (hasta 180 días). */
+/* Historial de precios: se conserva el de la ejecución anterior y se añade el precio de hoy.
+   Así, ejecutando este script cada día, la web va teniendo su gráfica de precios (hasta 180 días).
+   SEGURIDAD: el historial se LEE como datos (JSON), nunca se ejecuta productos.js.
+   Se guarda en historial-precios.json; si aún no existe, se lee de un productos.js generado por este script. */
+const archivoHistorial = path.join(__dirname, "historial-precios.json");
 function historialAnterior() {
+  const aMapa = (lista) => new Map((Array.isArray(lista) ? lista : [])
+    .filter((p) => p && typeof p.id === "string" && Array.isArray(p.historial))
+    .map((p) => [p.id, p.historial.filter((x) => Array.isArray(x) && typeof x[0] === "string" && typeof x[1] === "number")]));
   try {
-    const caja = { window: {} };
-    require("vm").runInNewContext(fs.readFileSync(salida, "utf8"), caja);
-    return new Map((caja.window.PRODUCTOS || []).map((p) => [p.id, p.historial || []]));
-  } catch (e) { return new Map(); }
+    const datos = JSON.parse(fs.readFileSync(archivoHistorial, "utf8"));
+    return new Map(Object.entries(datos).filter(([, h]) => Array.isArray(h)).map(([id, h]) => [id, aMapa([{ id, historial: h }]).get(id)]));
+  } catch (e) { if (e.code !== "ENOENT") console.warn(`Aviso: no se pudo leer ${archivoHistorial} (${e.message}).`); }
+  try {
+    // Formato que escribe este script: «// comentario\nwindow.PRODUCTOS = [ …JSON… ];»
+    const texto = fs.readFileSync(salida, "utf8");
+    const m = texto.match(/window\.PRODUCTOS\s*=\s*(\[[\s\S]*\]);?\s*$/);
+    return m ? aMapa(JSON.parse(m[1])) : new Map();
+  } catch (e) {
+    console.warn("Aviso: productos.js no es un archivo generado por este script; se empieza el historial de cero.");
+    return new Map();
+  }
 }
 const previos = historialAnterior();
 const limite = new Date(Date.now() - 180 * 864e5).toISOString().slice(0, 10);
@@ -98,4 +112,5 @@ for (const p of todos) {
   p.historial = h;
 }
 fs.writeFileSync(salida, `// Generado por importar-feed.js el ${new Date().toISOString()}\nwindow.PRODUCTOS = ${JSON.stringify(todos, null, 2)};\n`);
+fs.writeFileSync(archivoHistorial, JSON.stringify(Object.fromEntries(todos.map((p) => [p.id, p.historial])), null, 1) + "\n");
 console.log(`Listo: ${todos.length} productos guardados en ${salida}`);

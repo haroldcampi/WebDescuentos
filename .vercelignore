@@ -6,3 +6,12 @@ importar-feed.js
 *.csv
 .DS_Store
 .env*
+
+# Skills de agentes y su registro
+.agents/
+.claude/
+skills-lock.json
+historial-precios.json
+
+# Informes de auditoría de seguridad
+audits/
