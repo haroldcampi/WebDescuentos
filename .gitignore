@@ -22,3 +22,9 @@ skills-lock.json
 
 # Informes de auditoría de seguridad: nunca al repositorio (es público)
 audits/
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo

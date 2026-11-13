@@ -1,8 +1,9 @@
 /* Service worker: permite instalar la web como app y abrirla sin conexión.
    Siempre pide primero a la red (precios al día); si no hay conexión, usa la última copia guardada.
+   Los archivos de Next.js (/_next/static/…) se guardan solos la primera vez que se piden.
    Si cambias mucho la web, sube el número de VERSION para limpiar copias viejas. */
-const VERSION = "radar-v4";
-const BASE = ["./", "index.html", "styles.css", "app.js", "i18n.js", "productos.js", "manifest.webmanifest", "icon.svg", "icon-192.png", "vendor/supabase-2.118.0.min.js"];
+const VERSION = "radar-v5";
+const BASE = ["./", "manifest.webmanifest", "icon.svg", "icon-192.png"];
 
 const SIN_CACHE = ["code", "error", "error_description", "recuperar", "popup", "token_hash"];
 
@@ -22,6 +23,6 @@ self.addEventListener("fetch", (e) => {
     fetch(req).then((res) => {
       if (res.ok && !deAcceso) { const copia = res.clone(); caches.open(VERSION).then((c) => c.put(req, copia)); }
       return res;
-    }).catch(() => caches.match(req, { ignoreSearch: true }).then((r) => r || caches.match("index.html")))
+    }).catch(() => caches.match(req, { ignoreSearch: true }).then((r) => r || caches.match("./")))
   );
 });
