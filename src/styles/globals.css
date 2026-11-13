@@ -1,0 +1,166 @@
+/* Radar de Ofertas · dirección "libro de cuentas": lienzo blanco, tinta azul marino, un único índigo para la acción.
+   Tipografía ligera (300), esquinas de 4 px, líneas finas en lugar de sombras.
+   Los estilos están en las clases de Tailwind de cada componente (src/components). Aquí solo:
+   los tokens del diseño (@theme), el modo oscuro, los estilos base y las animaciones. */
+@import "tailwindcss";
+
+/* Variantes propias */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+@custom-variant pantalla-chica {
+  @media (max-width: 1080px) { @slot; }
+  @media (max-height: 560px) { @slot; }
+}
+@custom-variant tactil (@media (pointer: coarse));
+
+/* Tokens del diseño: bg-indigo, text-midnight, border-frost, text-small, rounded-box, ease-brand… */
+@theme static {
+  --color-indigo: #533afd;
+  --color-indigo-hover: #7389ff;
+  --color-accent-hi: #4329e8;
+  --color-midnight: #061b31;
+  --color-slate: #64748d;
+  --color-steel: #50617a;
+  --color-smoke: #839bc8;
+  --color-paper: #ffffff;
+  --color-mist: #f8fafd;
+  --color-frost: #e5edf5;
+  --color-lavender: #b9b9f9;
+  --color-lilac: #d6d9fc;
+  --color-wash: #e8e9ff;
+  --color-deep-violet: #182659;
+  --color-error: #c0123c;
+  --color-warn-ink: #8a4b00;
+  --color-warn-bg: #fff4e0;
+  --color-warn-line: #f2d39b;
+
+  --font-sans: "Inter Tight", "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --text-caption: 0.75rem;                                   /* 12 */
+  --text-small: 0.875rem;                                    /* 14 */
+  --text-body: 1rem;                                         /* 16 */
+  --text-lead: clamp(1.125rem, 1rem + 0.5vw, 1.375rem);      /* 18–22 */
+  --text-sub: clamp(1.25rem, 1.1rem + 0.6vw, 1.625rem);      /* 20–26 */
+  --text-head: clamp(2rem, 1.4rem + 2vw, 3rem);              /* 32–48 */
+  --text-display: clamp(2.5rem, 1.6rem + 3.6vw, 3.5rem);     /* 40–56 */
+  --text-mini: 0.6875rem;                                    /* 11 */
+
+  --radius-box: 4px;
+  --ease-brand: cubic-bezier(0.22, 1, 0.36, 1);
+  --tracking-label: 0.06em;
+
+  --breakpoint-xxs: 22.5rem;   /* 360 */
+  --breakpoint-xs: 30rem;      /* 480 */
+  --breakpoint-tab: 67.5rem;   /* 1080 */
+
+  --animate-subir: subir .35s var(--ease-brand);
+  --animate-entrar: entrar .35s var(--ease-brand);
+  --animate-aparecer: aparecer .5s var(--ease-brand);
+  --animate-pop: ava-pop .18s var(--ease-brand);
+  --animate-gira: logo-gira .8s linear infinite;
+}
+
+/* Modo oscuro: mismos papeles, tonos invertidos. El índigo se aclara para leerse sobre fondo oscuro */
+:root[data-theme="dark"] {
+  --color-indigo: #7464ff;
+  --color-indigo-hover: #9a8cff;
+  --color-accent-hi: #8676ff;
+  --color-midnight: #e6edf7;
+  --color-slate: #94a3bb;
+  --color-steel: #b1bdd0;
+  --color-smoke: #7d8fb3;
+  --color-paper: #0a1628;
+  --color-mist: #0f1e35;
+  --color-frost: #1f304b;
+  --color-lavender: #4b4fb0;
+  --color-lilac: #353a85;
+  --color-wash: #1c1f55;
+  --color-deep-violet: #2b3a7a;
+  --color-error: #ff7a8e;
+  --color-warn-ink: #ffc56b;
+  --color-warn-bg: #2b2112;
+  --color-warn-line: #5c4420;
+  color-scheme: dark;
+}
+
+/* Medidas de la página (no son clases: las usan las clases con mt-(--space-section), etc.) */
+:root {
+  --m: clamp(16px, 3vw, 40px);
+  --head-h: 76px;
+  --space-section: clamp(64px, 7vw, 96px);
+  --space-pause: clamp(40px, 4vw, 56px);
+  color-scheme: light;
+}
+@media (max-width: 640px) { :root { --head-h: 116px; } }
+
+/* Contenedor centrado de 1320 px con margen lateral (respeta la muesca del móvil) */
+@utility wrap {
+  margin-inline: auto;
+  max-width: 1320px;
+  padding-left: max(var(--m), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--m), env(safe-area-inset-right, 0px));
+}
+/* Líneas en SVG que no engordan al estirar la gráfica */
+@utility trazo-fijo { vector-effect: non-scaling-stroke; }
+
+@layer base {
+  [hidden] { display: none !important; }
+  html { scroll-behavior: smooth; scroll-padding-top: calc(var(--head-h) + 16px); }
+  body {
+    background: var(--color-paper); color: var(--color-midnight);
+    font-size: var(--text-body); font-weight: 300; line-height: 1.5; letter-spacing: -0.01em;
+    font-feature-settings: "ss01" on, "tnum" on;
+    -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+  }
+  button, input, select, textarea { letter-spacing: inherit; }
+  button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
+  svg { flex: none; }
+  :focus-visible { outline: 2px solid var(--color-indigo); outline-offset: 2px; }
+  ::selection { background: var(--color-wash); color: var(--color-midnight); }
+  h1, h2, h3 { font-weight: 300; color: var(--color-midnight); text-wrap: balance; overflow-wrap: break-word; }
+  h1 { letter-spacing: -0.025em; line-height: 1.03; }
+  h2 { letter-spacing: -0.02em; line-height: 1.08; }
+  h3 { letter-spacing: -0.01em; line-height: 1.15; }
+  p { text-wrap: pretty; }
+  input::placeholder, textarea::placeholder { color: var(--color-slate); }
+
+  /* Ventanas (ficha, comparador, acceso…): <dialog> nativo */
+  dialog {
+    margin: auto; border: 1px solid var(--color-frost); border-radius: var(--radius-box); padding: 0;
+    background: var(--color-paper); color: var(--color-midnight);
+    width: min(1080px, 100% - 32px); max-height: calc(100svh - 32px);
+  }
+  dialog[open] { animation: entrar .35s var(--ease-brand); }
+  /* Que desplazarse dentro del diálogo o sobre el fondo no mueva la página de detrás */
+  dialog:modal { overscroll-behavior: contain; }
+  dialog::backdrop { background: rgba(6, 27, 49, .45); overflow: hidden; overscroll-behavior: contain; }
+  :root[data-theme="dark"] dialog::backdrop { background: rgba(0, 0, 0, .6); }
+  /* Móvil: las ventanas ocupan toda la pantalla, como una vista propia */
+  @media (max-width: 640px) {
+    dialog { width: 100% !important; max-width: 100%; height: 100svh; max-height: 100svh; margin: 0; border: 0; border-radius: 0; padding-bottom: env(safe-area-inset-bottom, 0px); }
+    dialog[open] { animation-name: subir; }
+  }
+}
+
+/* Movimiento: cada sección entra por partes al aparecer en pantalla ([data-in] + clase .in, ver components/Entradas) */
+@media (prefers-reduced-motion: no-preference) {
+  .js [data-in] > *, .js [data-in][data-paso] { opacity: 0; transform: translateY(16px); transition: opacity .7s var(--ease-brand), transform .7s var(--ease-brand); }
+  /* Entrada escalonada: cada hijo 80 ms después del anterior, hasta 320 ms (la 1.ª línea es para navegadores sin sibling-index()) */
+  .js [data-in] > * { transition-delay: min(calc((var(--sibling-index, 1) - 1) * 80ms), 320ms); transition-delay: min(calc((sibling-index() - 1) * 80ms), 320ms); }
+  .js [data-in].in > *, .js [data-in][data-paso].in { opacity: 1; transform: none; }
+  .js [data-paso][data-in] > * { opacity: 1; transform: none; }
+}
+
+@keyframes subir { from { transform: translateY(100%); } }
+@keyframes entrar { from { opacity: 0; transform: translateY(16px); } }
+@keyframes aparecer { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes ava-pop { from { opacity: 0; transform: translateY(-4px); } }
+@keyframes logo-gira { to { transform: rotate(-360deg); } }
+
+/* Pasos numerados de «Cómo elegimos» (01, 02…) */
+.pasos { counter-reset: paso; }
+.pasos > [data-paso] { counter-increment: paso; }
+.pasos > [data-paso]::before { content: counter(paso, decimal-leading-zero); font-size: var(--text-caption); font-weight: 400; letter-spacing: var(--tracking-label); color: var(--color-indigo); }
+
+/* Anuncio de AdSense ya colocado */
+.adsbygoogle { display: block; }

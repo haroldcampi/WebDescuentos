@@ -1,11 +1,12 @@
-# Archivos que no se publican (documentación interna, base de datos y herramientas)
+# Archivos que no se suben a Vercel (documentación interna, base de datos y herramientas)
 LEEME.md
 README.md
 /supabase/
-importar-feed.js
 *.csv
 .DS_Store
 .env*
+out/
+.next/
 
 # Skills de agentes y su registro
 .agents/
