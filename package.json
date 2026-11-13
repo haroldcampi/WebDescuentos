@@ -27,6 +27,9 @@
     "typescript": "5.9.3"
   },
   "browserslist": [
-    "defaults and supports es6-module"
+    "chrome >= 100",
+    "edge >= 100",
+    "firefox >= 100",
+    "safari >= 15.4"
   ]
 }

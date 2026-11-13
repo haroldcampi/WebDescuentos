@@ -9,7 +9,7 @@ import "@/styles/globals.css";
 
 /* Fuente servida desde la propia web (next/font la descarga al compilar): sin peticiones a Google Fonts,
    con display: swap y una fuente de respaldo ajustada al mismo tamaño para que el texto no salte al cambiar */
-const fuente = Inter_Tight({ subsets: ["latin"], weight: ["300", "400", "500"], display: "swap", variable: "--font-inter-tight" });
+const fuente = Inter_Tight({ subsets: ["latin"], weight: ["300", "400", "500"], display: "swap", adjustFontFallback: true, variable: "--font-inter-tight" });
 
 // Antes del primer render, el reloj del catálogo se pone en la hora con la que se generó el HTML (ver catalogo.ts)
 let relojFijado = false;

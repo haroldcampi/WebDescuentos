@@ -1,4 +1,5 @@
 import { Head, Html, Main, NextScript } from "next/document";
+import { SUPABASE } from "@/lib/config";
 
 /* SEGURIDAD (CSP): la política de contenido está en vercel.json (cabecera Content-Security-Policy).
    Si añades un script en línea o de otro dominio, añádelo allí o el navegador lo bloqueará.
@@ -13,6 +14,7 @@ export default function Documento() {
         <meta name="referrer" content="strict-origin-when-cross-origin" />
         <meta name="theme-color" content="#ffffff" />
         <script dangerouslySetInnerHTML={{ __html: SCRIPT_TEMA }} />
+        <link rel="preconnect" href={SUPABASE.url} crossOrigin="" />
         <link rel="manifest" href="manifest.webmanifest" />
         <link rel="icon" href="icon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="icon-180.png" />

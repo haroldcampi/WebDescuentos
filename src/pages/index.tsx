@@ -64,14 +64,14 @@ export default function Inicio() {
       <Destacadas />
       <div className="wrap">
         {/* ANUNCIO 1 · Banner superior */}
-        <Anuncio sitio="superior" texto={t("ad.top")} margen="mt-(--space-pause)" className="min-h-24" />
+        <Anuncio sitio="superior" texto={t("ad.top")} margen="mt-(--space-pause)" alto="min-h-24" />
       </div>
       <Catalogo />
       <CompartirCta />
       <Metodo />
       <div className="wrap">
         {/* ANUNCIO 4 · Banner inferior */}
-        <Anuncio sitio="inferior" texto={t("ad.foot")} margen="mt-(--space-section)" className="min-h-24" />
+        <Anuncio sitio="inferior" texto={t("ad.foot")} margen="mt-(--space-section)" alto="min-h-24" />
       </div>
     </main>
     <BarraComparar />

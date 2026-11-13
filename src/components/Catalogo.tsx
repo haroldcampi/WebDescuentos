@@ -118,7 +118,7 @@ export function Catalogo() {
           </section>
           <FiltroPrecio className={cx(PANEL, "max-tab:m-0")} />
           <button className={cx(LINKBTN, "mt-3")} type="button" onClick={limpiarFiltros}>{t("side.clear")}</button>
-          <Anuncio sitio="lateral" texto={t("ad.side")} margen={cx("mt-6", sideAbierto && "max-tab:hidden")} className="min-h-[250px]" />
+          <Anuncio sitio="lateral" texto={t("ad.side")} margen={cx("mt-6", sideAbierto && "max-tab:hidden")} alto="min-h-[250px]" />
         </aside>
 
         <div id="resultados">

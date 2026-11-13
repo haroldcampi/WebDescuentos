@@ -77,13 +77,13 @@ export function Destacadas() {
           </>}
         </div>
       </div>
-      <div className="col-span-8 col-start-5 min-h-[calc(var(--big)+34px)] overflow-clip max-tab:col-span-full max-tab:col-start-1 entra-op"
+      <div className="col-span-8 col-start-5 min-h-[calc(var(--big)+34px)] overflow-clip max-tab:col-span-full max-tab:col-start-1"
         aria-roledescription={t("top.carousel")} aria-label={t("top.carouselAria")}>
         <div className="flex items-end gap-4 max-sm:gap-2 motion-reduce:transition-none" ref={track}>
           {giro.map((x, k) => {
             const grande = k === 0;
             return (
-              <div key={x.id} className={cx("flex min-w-0 flex-none flex-col transition-[width] duration-500 ease-brand motion-safe:animate-aparecer motion-reduce:transition-none nth-[n+6]:hidden max-tab:nth-[n+5]:hidden max-sm:nth-[n+4]:hidden", grande ? "w-(--big)" : "w-(--small)")}>
+              <div key={x.id} className={cx("flex min-w-0 flex-none flex-col transition-[width] duration-500 ease-brand motion-reduce:transition-none nth-[n+6]:hidden max-tab:nth-[n+5]:hidden max-sm:nth-[n+4]:hidden", grande ? "w-(--big)" : "w-(--small) motion-safe:animate-aparecer")}>
                 <button className={cx("group/run relative aspect-square overflow-clip rounded-box border bg-mist p-0 transition-[border-color] duration-300", grande ? "border-lavender" : "border-frost")}
                   type="button" aria-label={t("card.viewSheet", { t: i.tit(x) })} onClick={() => abrirFicha(x.id)}>
                   {/* La primera foto es la más grande de la portada (LCP): sin carga diferida y con prioridad alta */}

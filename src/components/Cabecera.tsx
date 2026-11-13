@@ -86,7 +86,7 @@ export function Cabecera() {
         </nav>
         <div className="-mr-4 flex flex-none rounded-box border border-frost p-0.5 max-tab:ml-auto max-sm:mx-0 max-xs:border-0 max-xs:p-0" role="group" aria-label={t("lang.aria")}>
           {(["es", "en"] as Idioma[]).map((l) => (
-            <button key={l} type="button" lang={l} aria-label={l === "es" ? "Español" : "English"} aria-pressed={i.lang === l} onClick={() => cambiarIdioma(l)}
+            <button key={l} type="button" lang={l} aria-label={l === "es" ? "ES · Español" : "EN · English"} aria-pressed={i.lang === l} onClick={() => cambiarIdioma(l)}
               className="h-8 min-w-[38px] rounded-[3px] border-0 bg-transparent px-2 text-caption font-normal tracking-[0.04em] text-slate transition-[background-color,color] duration-200 hover:text-midnight aria-pressed:bg-wash aria-pressed:text-indigo tactil:min-h-11 tactil:min-w-11 max-xs:size-10 max-xs:min-h-10 max-xs:min-w-10 max-xs:rounded-box max-xs:border max-xs:border-frost max-xs:text-small max-xs:aria-pressed:hidden">
               {l.toUpperCase()}
             </button>
