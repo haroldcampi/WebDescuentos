@@ -56,6 +56,7 @@
   --animate-subir: subir .35s var(--ease-brand);
   --animate-entrar: entrar .35s var(--ease-brand);
   --animate-aparecer: aparecer .5s var(--ease-brand);
+  --animate-cambio: cambio .45s var(--ease-brand);
   --animate-pop: ava-pop .18s var(--ease-brand);
   --animate-gira: logo-gira .8s linear infinite;
 }
@@ -159,6 +160,7 @@
   .entra > :nth-child(n+4) { animation-delay: 240ms; }
 }
 
+@keyframes cambio { from { transform: translateY(8px); } }
 @keyframes subir { from { transform: translateY(100%); } }
 @keyframes entrar { from { opacity: 0; transform: translateY(16px); } }
 @keyframes aparecer { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { AVA_DEFECTO, limpiarAvatar } from "@/lib/avatar";
 import {
-  USUARIO_OK, alCerrarAcceso, conPassword, entrarConGoogle, errorAcceso, marcarUsuarioOcupado, passFuerte, terminarCambioClave, usuarioLibre, volverAqui
+  USUARIO_OK, alCerrarAcceso, asegurarCuenta, conPassword, entrarConGoogle, errorAcceso, marcarUsuarioOcupado, passFuerte, terminarCambioClave, usuarioLibre, volverAqui
 } from "@/lib/cuenta";
 import { abrirAcceso, cerrarAcceso, useApp, useI18n, type Acceso as DatosAcceso, type ModoAcceso } from "@/lib/store";
 import { recordarSesion, sb } from "@/lib/supabase";
@@ -18,6 +18,8 @@ import { AUTH_LINK, BTN, CHK, DIALOGO_ANCHO, FLD, FLD_2, FLD_LAB, FORM, GHOST, I
 export function Acceso() {
   const { t } = useI18n();
   const acceso = useApp((s) => s.acceso);
+  // Al abrir la ventana se va descargando Supabase, para que esté listo al enviar el formulario
+  useEffect(() => { if (acceso) asegurarCuenta().catch((e) => console.error(e)); }, [acceso]);
   const ancho = acceso && ["crear", "ajustes"].includes(acceso.modo) ? DIALOGO_ANCHO.medio : DIALOGO_ANCHO.estrecho;
   return (
     <Dialogo abierto={!!acceso} onCerrar={() => { cerrarAcceso(); alCerrarAcceso(); }} etiqueta={t("acct.menu")} className={ancho} claveScroll={acceso?.modo}>
@@ -122,8 +124,8 @@ function Formulario({ a }: { a: DatosAcceso }) {
 
   async function alEnviar(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const cliente = sb(); if (!cliente) return;
     const f = e.currentTarget;
+    const cliente = await asegurarCuenta(); if (!cliente) return;
     const email = valor(f, "email").trim(), pass = valor(f, "pass"), nombre = valor(f, "nombre").trim();
     const esPerfil = modo === "usuario";
     if (["entrar", "crear", "olvido"].includes(modo) && !/^\S+@\S+\.\S+$/.test(email)) { foco(f, "email"); return fallo("auth.err.email"); }

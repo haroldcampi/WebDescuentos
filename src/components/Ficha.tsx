@@ -160,7 +160,7 @@ function Objetivo({ p }: { p: Producto }) {
   const [valor, setValor] = useState(obj ? obj.toFixed(2) : "");
   const [msg, setMsg] = useState<string | null>(null);
   useEffect(() => { setValor(obj ? obj.toFixed(2) : ""); }, [obj, p.id]);
-  if (!sb() || !usuario || !seguido) return null;
+  if (!usuario || !seguido) return null;
   async function guardar(e: FormEvent) {
     e.preventDefault();
     const txt = valor.trim(), v = txt ? parseFloat(txt.replace(",", ".")) : null;

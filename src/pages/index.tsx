@@ -1,23 +1,49 @@
 /* Portada: rebajas más fuertes · anuncio · catálogo con filtros · compartir · cómo elegimos · anuncio · pie.
    El HTML se genera al compilar (en español); al abrirse en el navegador se aplica el idioma del visitante
    y se pintan los productos (las ofertas caducadas se quitan con la hora del visitante). */
-import { useEffect } from "react";
-import { Acceso } from "@/components/Acceso";
-import { Alertas } from "@/components/Alertas";
+import dynamic from "next/dynamic";
+import { useEffect, useRef } from "react";
 import { Anuncio } from "@/components/Anuncio";
 import { Cabecera } from "@/components/Cabecera";
 import { Catalogo } from "@/components/Catalogo";
-import { BarraComparar, VentanaComparador } from "@/components/Comparador";
-import { CompartirOferta } from "@/components/CompartirOferta";
+import { BarraComparar } from "@/components/Comparador";
 import { Destacadas } from "@/components/Destacadas";
 import { Evento } from "@/components/Evento";
-import { Ficha } from "@/components/Ficha";
 import { CompartirCta, Metodo, Pie } from "@/components/Secciones";
 import { catalogo, reloj } from "@/lib/catalogo";
 import { iniciarComunidad } from "@/lib/comunidad";
 import { iniciarCuenta } from "@/lib/cuenta";
 import { idiomaInicial } from "@/lib/i18n";
 import { abrirFicha, useApp, useI18n } from "@/lib/store";
+
+/* Las ventanas (ficha con galería, gráfica y comentarios; comparador; alertas; cuenta; compartir) no se ven al abrir la web:
+   su código se descarga la primera vez que se abre cada una, no con la página. */
+const Ficha = dynamic(() => import("@/components/Ficha").then((m) => m.Ficha), { ssr: false });
+const VentanaComparador = dynamic(() => import("@/components/Comparador").then((m) => m.VentanaComparador), { ssr: false });
+const Alertas = dynamic(() => import("@/components/Alertas").then((m) => m.Alertas), { ssr: false });
+const Acceso = dynamic(() => import("@/components/Acceso").then((m) => m.Acceso), { ssr: false });
+const CompartirOferta = dynamic(() => import("@/components/CompartirOferta").then((m) => m.CompartirOferta), { ssr: false });
+
+// true desde la primera vez que se cumple la condición (la ventana, una vez cargada, se queda montada)
+function useUnaVez(c: boolean) {
+  const visto = useRef(false);
+  if (c) visto.current = true;
+  return visto.current;
+}
+function Ventanas() {
+  const ficha = useUnaVez(useApp((s) => !!s.fichaId));
+  const comparador = useUnaVez(useApp((s) => s.comparadorAbierto));
+  const alertas = useUnaVez(useApp((s) => s.alertasAbierto));
+  const acceso = useUnaVez(useApp((s) => !!s.acceso));
+  const compartir = useUnaVez(useApp((s) => s.compartirAbierto));
+  return <>
+    {ficha && <Ficha />}
+    {comparador && <VentanaComparador />}
+    {alertas && <Alertas />}
+    {acceso && <Acceso />}
+    {compartir && <CompartirOferta />}
+  </>;
+}
 
 /* Entrada de cada sección al aparecer en pantalla */
 function entradas() {
@@ -76,10 +102,6 @@ export default function Inicio() {
     </main>
     <BarraComparar />
     <Pie />
-    <Ficha />
-    <VentanaComparador />
-    <Alertas />
-    <Acceso />
-    <CompartirOferta />
+    <Ventanas />
   </>;
 }
