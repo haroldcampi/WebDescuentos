@@ -1,4 +1,5 @@
 /* Comparador: barra fija abajo con las miniaturas elegidas y ventana con la tabla lado a lado */
+import Image from "next/image";
 import { useEffect, type ReactNode } from "react";
 import { catalogo, money } from "@/lib/catalogo";
 import { MAX_COMPARAR } from "@/lib/config";
@@ -16,7 +17,7 @@ export function BarraComparar() {
   useEffect(() => { document.body.classList.toggle("pb-[84px]", n > 0); document.body.classList.toggle("max-sm:pb-[150px]", n > 0); }, [n]);
   if (!n) return null;
   const { porId } = catalogo();
-  const casilla = "size-[52px] overflow-hidden rounded-box border border-frost bg-mist max-sm:size-[46px]";
+  const casilla = "relative size-[52px] overflow-hidden rounded-box border border-frost bg-mist max-sm:size-[46px]";
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 animate-subir border-t border-lavender bg-paper pb-[env(safe-area-inset-bottom,0px)] text-midnight" id="compare-bar">
       <div className="wrap flex min-h-[76px] items-center gap-4 max-sm:flex-wrap max-sm:gap-x-4 max-sm:gap-y-2.5 max-sm:pt-4 max-sm:pb-3">
@@ -25,7 +26,7 @@ export function BarraComparar() {
             const p = ids[k] ? porId.get(ids[k]) : undefined;
             return (
               <div key={k} className="relative">
-                <div className={casilla}>{p && <img className="size-full object-cover" src={p.imagenes[0]} alt={i.tit(p)} />}</div>
+                <div className={casilla}>{p && <Image className="object-cover" src={p.imagenes[0]} alt={i.tit(p)} fill sizes="52px" />}</div>
                 {p && <button className="absolute -top-2 -right-2 size-[22px] rounded-box border border-frost bg-paper text-sm leading-none text-midnight hover:border-lavender hover:text-indigo tactil:-top-3 tactil:-right-3 tactil:size-8 max-sm:-top-[9px] max-sm:-right-[9px] max-sm:size-[26px] max-sm:text-[13px]"
                   type="button" aria-label={t("cmp.remove", { t: i.tit(p) })} onClick={() => alternarComparar(p.id)}>×</button>}
               </div>
@@ -66,7 +67,7 @@ export function VentanaComparador() {
           <table className="w-full min-w-[600px] border-collapse text-small font-normal">
             <thead><tr><th className={celda}></th>{ps.map((p) => (
               <th key={p.id} scope="col" className={cx(celda, "font-normal")}>
-                <img className="mb-2 aspect-square w-[120px] rounded-box border border-frost object-cover" src={p.imagenes[0]} alt="" /><span>{i.tit(p)}</span>
+                <Image className="mb-2 aspect-square w-[120px] rounded-box border border-frost object-cover" src={p.imagenes[0]} alt="" width={120} height={120} /><span>{i.tit(p)}</span>
               </th>))}</tr></thead>
             <tbody>
               {filas.map(([nombre, ver, puntuar]) => {

@@ -13,6 +13,8 @@ export const FILTROS_INICIALES: Filtros = { q: "", categoria: "Todas", tiendas: 
 
 interface Estado {
   montado: boolean;
+  // Hora con la que se calcula el catálogo (ver reloj en catalogo.ts); al cambiar, se vuelve a pintar
+  ahora: number;
   lang: Idioma;
   filtros: Filtros;
   visibles: number;
@@ -37,6 +39,7 @@ interface Estado {
 
 export const useApp = create<Estado>(() => ({
   montado: false,
+  ahora: 0,
   lang: "es",
   filtros: FILTROS_INICIALES,
   visibles: POR_TANDA,

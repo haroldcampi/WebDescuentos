@@ -13,7 +13,7 @@ import { Destacadas } from "@/components/Destacadas";
 import { Evento } from "@/components/Evento";
 import { Ficha } from "@/components/Ficha";
 import { CompartirCta, Metodo, Pie } from "@/components/Secciones";
-import { catalogo } from "@/lib/catalogo";
+import { catalogo, reloj } from "@/lib/catalogo";
 import { iniciarComunidad } from "@/lib/comunidad";
 import { iniciarCuenta } from "@/lib/cuenta";
 import { idiomaInicial } from "@/lib/i18n";
@@ -31,6 +31,11 @@ function entradas() {
   setTimeout(() => els.forEach((el) => { if (el.getBoundingClientRect().top < innerHeight) ver(el); }), 2500);
 }
 
+// La hora de la compilación viaja en las props: el primer render del navegador usa la misma que el HTML generado
+export function getStaticProps() {
+  return { props: { generado: Date.now() } };
+}
+
 export default function Inicio() {
   const { t } = useI18n();
   const montado = useApp((s) => s.montado);
@@ -38,7 +43,9 @@ export default function Inicio() {
   useEffect(() => {
     const lang = idiomaInicial();
     document.documentElement.lang = lang;
-    useApp.setState({ lang, montado: true });
+    // El HTML se generó con la hora de la compilación: ahora pasa a la del visitante (quita ofertas caducadas, «Nueva», «Termina en…»)
+    reloj.ahora = Date.now();
+    useApp.setState({ lang, montado: true, ahora: reloj.ahora });
     iniciarComunidad();
     iniciarCuenta();
     // Enlace compartido (?producto=id): abre directamente la ficha de ese producto

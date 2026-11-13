@@ -1,16 +1,15 @@
 /* Secciones fijas de la portada: «¿Encontraste una ganga?», «Cómo elegimos las ofertas» y el pie */
 import { useEffect, useState } from "react";
 import { abrirCompartir } from "@/lib/compartir";
-import { useApp, useI18n } from "@/lib/store";
-import { sb } from "@/lib/supabase";
+import { useI18n } from "@/lib/store";
+import { COMUNIDAD } from "@/lib/config";
 import * as I from "./iconos";
 import { BTN, EYEBROW, cx } from "./ui";
 
 // Invitación a compartir una oferta (solo con cuentas activas)
 export function CompartirCta() {
   const { t } = useI18n();
-  const montado = useApp((s) => s.montado);
-  if (!montado || !sb()) return null;
+  if (!COMUNIDAD) return null;
   return (
     <section className="wrap mt-(--space-section) flex flex-wrap items-center justify-between gap-6 border-y border-frost py-8" id="compartir-cta" aria-labelledby="share-cta-title">
       <div className="flex flex-[1_1_360px] flex-col gap-1.5">
@@ -25,8 +24,7 @@ export function CompartirCta() {
 /* Cómo elegimos: cinco pasos numerados, separados por líneas finas */
 export function Metodo() {
   const { t } = useI18n();
-  const montado = useApp((s) => s.montado);
-  const sinLinea = montado && !!sb(); // justo debajo de «¿Encontraste una ganga?», que ya tiene su línea
+  const sinLinea = COMUNIDAD; // justo debajo de «¿Encontraste una ganga?», que ya tiene su línea
   const pasos = [1, 2, 3, 4, 5];
   return (
     <section className={cx("mt-(--space-section) pt-(--space-section)", sinLinea ? "" : "border-t border-frost")} id="como-elegimos" aria-labelledby="como-title">

@@ -1,5 +1,6 @@
 /* Ficha del producto: galería, precio, acciones, compartir, precio objetivo, cupón, votos, datos, historial, comentarios y similares.
    La dirección del navegador apunta al producto abierto (?producto=id), para copiarla o recargar. */
+import Image from "next/image";
 import { useEffect, useState, type FormEvent } from "react";
 import { DIA, catalogo, cuentaAtras, finDe, money } from "@/lib/catalogo";
 import { COMUNIDAD } from "@/lib/config";
@@ -75,7 +76,7 @@ function Detalle({ p, foto, ver }: { p: Producto; foto: number; ver: (k: number)
     <div className="grid grid-cols-[1.1fr_1fr] gap-10 p-10 max-tab:grid-cols-1 max-sm:p-5 max-sm:pt-2">
       <div>
         <div className="relative aspect-square overflow-clip rounded-box border border-frost bg-mist" data-foto-grande>
-          <img className="size-full object-cover" src={p.imagenes[foto]} alt={titulo} />
+          <Image className="object-cover" src={p.imagenes[foto]} alt={titulo} fill sizes="(max-width: 1080px) 100vw, 560px" fetchPriority="high" />
           {p.imagenes.length > 1 && <>
             <button className={cx(nav, "left-3")} type="button" aria-label={t("sheet.prev")} onClick={() => ver(foto - 1)}>‹</button>
             <button className={cx(nav, "right-3")} type="button" aria-label={t("sheet.next")} onClick={() => ver(foto + 1)}>›</button>
@@ -83,9 +84,9 @@ function Detalle({ p, foto, ver }: { p: Producto; foto: number; ver: (k: number)
         </div>
         <div className="mt-2 flex gap-2">
           {p.imagenes.map((src, k) => (
-            <button key={k} className="size-[72px] overflow-clip rounded-box border border-frost bg-mist p-0 opacity-60 transition-[opacity,border-color] duration-200 hover:border-indigo hover:opacity-100 aria-[current=true]:border-indigo aria-[current=true]:opacity-100"
+            <button key={k} className="relative size-[72px] overflow-clip rounded-box border border-frost bg-mist p-0 opacity-60 transition-[opacity,border-color] duration-200 hover:border-indigo hover:opacity-100 aria-[current=true]:border-indigo aria-[current=true]:opacity-100"
               type="button" aria-current={k === foto} aria-label={t("sheet.photoN", { n: k + 1 })} onClick={() => ver(k)}>
-              <img className="size-full object-cover" src={src} alt="" />
+              <Image className="object-cover" src={src} alt="" fill sizes="72px" />
             </button>
           ))}
         </div>

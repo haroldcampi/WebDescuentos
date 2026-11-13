@@ -16,15 +16,15 @@ const leer = (v: string) => { const n = parseFloat(String(v).replace(",", "."));
 
 export function Catalogo() {
   const i = useI18n(), { t } = i;
-  const montado = useApp((s) => s.montado);
+  const ahora = useApp((s) => s.ahora);
   const f = useApp((s) => s.filtros), visibles = useApp((s) => s.visibles);
   const favoritos = useApp((s) => s.favoritos), votos = useApp((s) => s.votos);
   const [sideAbierto, setSideAbierto] = useState(false);
 
   const { lista, cuentaGrupos } = useMemo(
-    () => (montado ? filtrar(f, favoritos, votos, i) : { lista: [], cuentaGrupos: new Map<string, number>() }),
+    () => filtrar(f, favoritos, votos, i),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [montado, f, favoritos, votos, i.lang]
+    [ahora, f, favoritos, votos, i.lang]
   );
   const tope = Math.min(Math.max(visibles, 24), Math.max(lista.length, 24));
   const mostrados = lista.slice(0, tope);
@@ -75,8 +75,8 @@ export function Catalogo() {
         <div>
           <p className={EYEBROW}>{t("deals.eyebrow")}</p>
           <h2 id="titulo" className="text-head">{titulo}</h2>
-          <p className="mt-3 min-h-[1.5em] text-small font-normal text-slate">
-            {montado && `${t(lista.length === 1 ? "results.products1" : "results.productsN", { n: lista.length })} · ${t(nt === 1 ? "results.stores1" : "results.storesN", { n: nt })}`}
+          <p className="mt-3 text-small font-normal text-slate">
+            {`${t(lista.length === 1 ? "results.products1" : "results.productsN", { n: lista.length })} · ${t(nt === 1 ? "results.stores1" : "results.storesN", { n: nt })}`}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 max-sm:w-full max-sm:gap-x-2 max-sm:gap-y-1">
@@ -92,8 +92,8 @@ export function Catalogo() {
         </div>
       </div>
 
-      <nav className="mt-8 flex min-h-[38px] flex-wrap gap-2" id="cats" aria-label={t("cat.aria")}>
-        {montado && [["Todas", catalogo().lista.length] as [string, number], ...categoriasOrdenadas(i)].map(([c, n]) => (
+      <nav className="mt-8 flex flex-wrap gap-2" id="cats" aria-label={t("cat.aria")}>
+        {[["Todas", catalogo().lista.length] as [string, number], ...categoriasOrdenadas(i)].map(([c, n]) => (
           <button key={c} className={cx(CHIP, "group")} type="button" aria-pressed={c === f.categoria} onClick={() => cambiarFiltros({ categoria: c })}>
             <I.IcoCategoria c={c} />{i.cat(c)}<span className="text-slate tabular-nums group-aria-pressed:text-indigo">{n}</span>
           </button>
@@ -106,7 +106,7 @@ export function Catalogo() {
           <section className={cx(PANEL, "max-tab:m-0")}>
             <h3 className={cx(LABEL, "mb-3")}>{t("side.stores")}</h3>
             <div>
-              {montado && contar("tienda").map(([tienda, n]) => (
+              {contar("tienda").map(([tienda, n]) => (
                 <label key={tienda} className="flex cursor-pointer items-center gap-2.5 py-1.5 text-small font-normal tactil:min-h-11">
                   <input className="m-0 size-4 accent-indigo tactil:size-5" type="checkbox" value={tienda} checked={f.tiendas.includes(tienda)}
                     onChange={(e) => cambiarFiltros({ tiendas: e.target.checked ? [...f.tiendas, tienda] : f.tiendas.filter((x) => x !== tienda) })} />
@@ -132,7 +132,7 @@ export function Catalogo() {
             </div>
           )}
           <div ref={rejilla} className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-x-6 gap-y-12 max-sm:grid-cols-2 max-sm:gap-x-3 max-sm:gap-y-9">
-            {montado && (piezas.length ? piezas : vacio)}
+            {piezas.length ? piezas : vacio}
           </div>
           {quedan > 0 && (
             <button className={cx(GHOST, "mt-12 flex w-full")} type="button" onClick={() => { focoEn.current = tope; verMas(); }}>
@@ -148,9 +148,9 @@ export function Catalogo() {
 /* Precio: barra del máximo y, a mano, un rango «Desde» – «Hasta» en dólares (vacío = sin límite) */
 function FiltroPrecio({ className }: { className?: string }) {
   const { t } = useI18n();
-  const montado = useApp((s) => s.montado);
+  useApp((s) => s.ahora);
   const min = useApp((s) => s.filtros.min), max = useApp((s) => s.filtros.max);
-  const tope = montado ? precioMaximo() : 10;
+  const tope = precioMaximo();
   const [txtMin, setTxtMin] = useState(""), [txtMax, setTxtMax] = useState("");
   const espera = useRef<ReturnType<typeof setTimeout>>(undefined);
   // Si los filtros cambian desde fuera (p. ej. «Borrar filtros»), los campos se ponen al día

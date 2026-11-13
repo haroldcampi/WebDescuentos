@@ -5,7 +5,7 @@ import { bajadas, nombreUsuario, salir } from "@/lib/cuenta";
 import { guardarIdioma, idiomaEnDireccion, IDIOMAS, type Idioma } from "@/lib/i18n";
 import { bajarA, cerrarTeclado, destinoBusqueda, esMovil, irAlCatalogo, irAResultados } from "@/lib/scroll";
 import { abrirAcceso, abrirAlertas, cambiarFiltros, limpiarFiltros, useApp, useI18n } from "@/lib/store";
-import { sb } from "@/lib/supabase";
+import { COMUNIDAD } from "@/lib/config";
 import { MiAvatar } from "./Avatar";
 import * as I from "./iconos";
 import { ICON_BTN, cx } from "./ui";
@@ -174,7 +174,6 @@ function Tema() {
 /* Cuenta: sin sesión abre «Entrar»; con sesión, un menú con favoritos, alertas, ajustes y salir */
 function Cuenta() {
   const { t } = useI18n();
-  const montado = useApp((s) => s.montado);
   const usuario = useApp((s) => s.usuario), perfil = useApp((s) => s.perfil), nFav = useApp((s) => s.favoritos.size);
   const [abierto, setAbierto] = useState(false);
   const caja = useRef<HTMLDivElement>(null), btn = useRef<HTMLButtonElement>(null), pop = useRef<HTMLDivElement>(null);
@@ -186,7 +185,7 @@ function Cuenta() {
     return () => document.removeEventListener("click", fuera);
   }, [abierto]);
   useEffect(() => { if (!usuario) setAbierto(false); }, [usuario]);
-  if (!montado || !sb()) return null;
+  if (!COMUNIDAD) return null;
 
   const nombre = nombreUsuario(usuario, perfil);
   const lab = usuario ? `${t("acct.menu")}: ${nombre}` : t("acct.btn");
