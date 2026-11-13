@@ -1,6 +1,6 @@
 /* Franja del próximo gran evento de rebajas (Black Friday, Cyber Monday…). Se configura en config.ts (EVENTOS). */
 import { useState } from "react";
-import { DIA } from "@/lib/catalogo";
+import { DIA, reloj } from "@/lib/catalogo";
 import { EVENTOS } from "@/lib/config";
 import { pedirCuenta } from "@/lib/cuenta";
 import { abrirAlertas, useApp, useI18n } from "@/lib/store";
@@ -8,9 +8,12 @@ import { sb } from "@/lib/supabase";
 import * as I from "./iconos";
 import { GHOST, cx } from "./ui";
 
-function proximo() {
-  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
-  const ev = EVENTOS.map((e) => ({ ...e, t: new Date(e.fecha + "T00:00:00") }))
+/* Va ya en el HTML compilado para que su hueco esté reservado desde la primera pintura (si no, empuja la página al aparecer).
+   El primer render cuenta los días en UTC (igual al compilar y en el navegador); tras montar, con la hora local. */
+function proximo(local: boolean) {
+  const hoy = new Date(reloj.ahora);
+  if (local) hoy.setHours(0, 0, 0, 0); else hoy.setUTCHours(0, 0, 0, 0);
+  const ev = EVENTOS.map((e) => ({ ...e, t: new Date(e.fecha + (local ? "T00:00:00" : "T00:00:00Z")) }))
     .filter((e) => +e.t >= +hoy && (+e.t - +hoy) / DIA <= 60).sort((a, b) => +a.t - +b.t)[0];
   return ev ? { ev, hoy } : null;
 }
@@ -18,12 +21,13 @@ function proximo() {
 export function Evento() {
   const { t } = useI18n();
   const montado = useApp((s) => s.montado);
+  useApp((s) => s.ahora);
   const usuario = useApp((s) => s.usuario);
   const [cerrado, setCerrado] = useState<string | null>(null);
-  if (!montado) return null;
-  const sig = proximo(); if (!sig) return null;
+  const sig = proximo(montado); if (!sig) return null;
   const { ev, hoy } = sig;
-  let guardado = false; try { guardado = localStorage.getItem("radar-evento-cerrado") === ev.fecha; } catch {}
+  let guardado = false;
+  if (montado) { try { guardado = localStorage.getItem("radar-evento-cerrado") === ev.fecha; } catch {} }
   if (guardado || cerrado === ev.fecha) return null;
   const dias = Math.round((+ev.t - +hoy) / DIA);
   return (

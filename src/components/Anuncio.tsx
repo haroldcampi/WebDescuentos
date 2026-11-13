@@ -7,8 +7,8 @@ import { cx } from "./ui";
 
 declare global { interface Window { adsbygoogle?: unknown[] } }
 
-// margen: se mantiene también con el anuncio real; className: solo para el recuadro de ejemplo
-export function Anuncio({ sitio, texto, margen, className }: { sitio: keyof typeof ADSENSE.bloques; texto: string; margen?: string; className?: string }) {
+// margen y alto se mantienen también con el anuncio real: el hueco queda reservado y el anuncio no empuja el contenido al cargar
+export function Anuncio({ sitio, texto, margen, alto }: { sitio: keyof typeof ADSENSE.bloques; texto: string; margen?: string; alto: string }) {
   const { t } = useI18n();
   const slot = String(ADSENSE.bloques[sitio] || "").trim();
   const real = /^\d{6,}$/.test(slot);
@@ -19,12 +19,12 @@ export function Anuncio({ sitio, texto, margen, className }: { sitio: keyof type
     try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) { console.error(e); }
   }, [real]);
   if (real) return (
-    <div id={"ad-" + sitio} className={margen}>
+    <div id={"ad-" + sitio} className={cx("overflow-hidden", margen, alto)}>
       <ins className="adsbygoogle" data-ad-client={ADSENSE.cliente} data-ad-slot={slot} data-ad-format="auto" data-full-width-responsive="true" />
     </div>
   );
   return (
-    <div id={"ad-" + sitio} className={cx("grid place-items-center rounded-box border border-dashed border-frost bg-mist p-4 text-center text-small text-slate", margen, className)}>
+    <div id={"ad-" + sitio} className={cx("grid place-items-center rounded-box border border-dashed border-frost bg-mist p-4 text-center text-small text-slate", margen, alto)}>
       <div><small className="mb-1 block text-caption uppercase tracking-label text-steel">{t("ad.label")}</small><span>{texto}</span></div>
     </div>
   );

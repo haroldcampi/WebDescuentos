@@ -5,7 +5,7 @@ import { bajadas, nombreUsuario, salir } from "@/lib/cuenta";
 import { guardarIdioma, idiomaEnDireccion, IDIOMAS, type Idioma } from "@/lib/i18n";
 import { bajarA, cerrarTeclado, destinoBusqueda, esMovil, irAlCatalogo, irAResultados } from "@/lib/scroll";
 import { abrirAcceso, abrirAlertas, cambiarFiltros, limpiarFiltros, useApp, useI18n } from "@/lib/store";
-import { sb } from "@/lib/supabase";
+import { COMUNIDAD } from "@/lib/config";
 import { MiAvatar } from "./Avatar";
 import * as I from "./iconos";
 import { ICON_BTN, cx } from "./ui";
@@ -86,7 +86,7 @@ export function Cabecera() {
         </nav>
         <div className="-mr-4 flex flex-none rounded-box border border-frost p-0.5 max-tab:ml-auto max-sm:mx-0 max-xs:border-0 max-xs:p-0" role="group" aria-label={t("lang.aria")}>
           {(["es", "en"] as Idioma[]).map((l) => (
-            <button key={l} type="button" lang={l} aria-label={l === "es" ? "Español" : "English"} aria-pressed={i.lang === l} onClick={() => cambiarIdioma(l)}
+            <button key={l} type="button" lang={l} aria-label={l === "es" ? "ES · Español" : "EN · English"} aria-pressed={i.lang === l} onClick={() => cambiarIdioma(l)}
               className="h-8 min-w-[38px] rounded-[3px] border-0 bg-transparent px-2 text-caption font-normal tracking-[0.04em] text-slate transition-[background-color,color] duration-200 hover:text-midnight aria-pressed:bg-wash aria-pressed:text-indigo tactil:min-h-11 tactil:min-w-11 max-xs:size-10 max-xs:min-h-10 max-xs:min-w-10 max-xs:rounded-box max-xs:border max-xs:border-frost max-xs:text-small max-xs:aria-pressed:hidden">
               {l.toUpperCase()}
             </button>
@@ -174,7 +174,6 @@ function Tema() {
 /* Cuenta: sin sesión abre «Entrar»; con sesión, un menú con favoritos, alertas, ajustes y salir */
 function Cuenta() {
   const { t } = useI18n();
-  const montado = useApp((s) => s.montado);
   const usuario = useApp((s) => s.usuario), perfil = useApp((s) => s.perfil), nFav = useApp((s) => s.favoritos.size);
   const [abierto, setAbierto] = useState(false);
   const caja = useRef<HTMLDivElement>(null), btn = useRef<HTMLButtonElement>(null), pop = useRef<HTMLDivElement>(null);
@@ -186,7 +185,7 @@ function Cuenta() {
     return () => document.removeEventListener("click", fuera);
   }, [abierto]);
   useEffect(() => { if (!usuario) setAbierto(false); }, [usuario]);
-  if (!montado || !sb()) return null;
+  if (!COMUNIDAD) return null;
 
   const nombre = nombreUsuario(usuario, perfil);
   const lab = usuario ? `${t("acct.menu")}: ${nombre}` : t("acct.btn");

@@ -6,6 +6,11 @@ import { ICO } from "./iconos-cat";
 import type { Filtros, Producto, ProductoBase } from "./tipos";
 
 export const DIA = 864e5;
+
+/* Reloj de la web. El HTML se genera al compilar con la hora de la compilación; en el navegador, el primer render
+   usa esa MISMA hora (llega en las props de la página) para que React no encuentre diferencias al hidratar.
+   Justo después, index.tsx lo pone en la hora real del visitante y se quitan las ofertas caducadas. */
+export const reloj = { ahora: Date.now() };
 export const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 export const normalizar = (s: string) => String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 // Solo se enlazan direcciones http(s): un feed con "javascript:..." no puede ejecutar código
@@ -20,14 +25,14 @@ export const finDe = (p: ProductoBase) => {
   const d = new Date(p.termina.length <= 10 ? p.termina + "T23:59:59" : p.termina);
   return isNaN(+d) ? 0 : d.getTime();
 };
-const vigente = (p: ProductoBase) => !finDe(p) || finDe(p) > Date.now();
+const vigente = (p: ProductoBase) => !finDe(p) || finDe(p) > reloj.ahora;
 export const esNueva = (p: ProductoBase) => {
   if (!p.publicado) return false;
   const d = new Date(p.publicado + "T00:00:00").getTime();
-  return !isNaN(d) && Date.now() - d < 2 * DIA && Date.now() >= d;
+  return !isNaN(d) && reloj.ahora - d < 2 * DIA && reloj.ahora >= d;
 };
 export function quedan(p: ProductoBase, t: T) {
-  const fin = finDe(p), ms = fin - Date.now();
+  const fin = finDe(p), ms = fin - reloj.ahora;
   if (!fin || ms <= 0) return null;
   const h = Math.ceil(ms / 36e5);
   if (h <= 36) return { txt: t("deal.endsH", { n: h }), urgente: true };
@@ -70,12 +75,12 @@ function preparar(p: ProductoBase): Producto {
   return r;
 }
 
-/* Los productos se preparan en el navegador (las ofertas caducadas se quitan con la hora del visitante, no la de la compilación) */
-let cache: { lista: Producto[]; porId: Map<string, Producto> } | null = null;
+/* Productos vigentes según el reloj (se recalculan cuando cambia la hora: compilación → visitante) */
+let cache: { t: number; lista: Producto[]; porId: Map<string, Producto> } | null = null;
 export function catalogo() {
-  if (!cache || typeof window === "undefined") {
+  if (!cache || cache.t !== reloj.ahora) {
     const lista = PRODUCTOS.filter(vigente).map(preparar);
-    cache = { lista, porId: new Map(lista.map((p) => [p.id, p])) };
+    cache = { t: reloj.ahora, lista, porId: new Map(lista.map((p) => [p.id, p])) };
   }
   return cache;
 }
@@ -85,7 +90,7 @@ export function catalogo() {
 export function analisis(p: Producto) {
   const h = (p.historial || []).filter((x) => Array.isArray(x) && x.length === 2 && typeof x[0] === "string" && isFinite(x[1]));
   if (h.length < 4) return null;
-  const corte = new Date(Date.now() - 90 * DIA).toISOString().slice(0, 10);
+  const corte = new Date(reloj.ahora - 90 * DIA).toISOString().slice(0, 10);
   const ult = h.filter((x) => x[0] >= corte), usa = ult.length >= 4 ? ult : h;
   const precios = usa.map((x) => x[1]), previos = precios.slice(0, -1);
   const min = Math.min(...precios), max = Math.max(...precios), media = precios.reduce((a, b) => a + b, 0) / precios.length;

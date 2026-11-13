@@ -5,7 +5,6 @@ import { COMUNIDAD, TIENDAS } from "@/lib/config";
 import { votar } from "@/lib/comunidad";
 import { alternarFavorito, alternarSeguir } from "@/lib/cuenta";
 import { useApp, useI18n } from "@/lib/store";
-import { sb } from "@/lib/supabase";
 import type { Producto } from "@/lib/tipos";
 import * as I from "./iconos";
 import { CTA, FLAG, FLAG_TIPO, GHOST, cx } from "./ui";
@@ -61,6 +60,7 @@ export function EnlaceCompra({ p, children, className }: { p: Producto; children
 export function Etiquetas({ p, className }: { p: Producto; className?: string }) {
   const { t } = useI18n();
   const enTendencia = useApp((s) => s.votos.enTendencia.includes(p.id));
+  useApp((s) => s.ahora);
   const q = quedan(p, t), an = analisis(p);
   const f: ReactNode[] = [];
   if (esErrorPrecio(p)) f.push(<span key="err" className={cx(FLAG, FLAG_TIPO.urgente)} title={t("deal.errorTip")}><I.Rayo />{t("deal.error")}</span>);
@@ -112,7 +112,7 @@ export function Votos({ p, completo = false }: { p: Producto; completo?: boolean
 export function BotonesCuenta({ p, completo = false }: { p: Producto; completo?: boolean }) {
   const { t } = useI18n();
   const fav = useApp((s) => s.favoritos.has(p.id)), seg = useApp((s) => s.seguidos.has(p.id));
-  if (!sb()) return null;
+  if (!COMUNIDAD) return null;
   const relleno = "aria-pressed:[&_svg]:fill-current aria-pressed:[&_svg]:[fill-opacity:.25]";
   if (completo) return <>
     <button className={cx(GHOST, relleno, "[&_svg]:size-[18px]")} type="button" aria-pressed={fav} onClick={() => alternarFavorito(p.id)}><I.Corazon /><span>{t(fav ? "fav.on" : "fav.add")}</span></button>

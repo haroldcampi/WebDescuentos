@@ -33,7 +33,7 @@
   --color-warn-bg: #fff4e0;
   --color-warn-line: #f2d39b;
 
-  --font-sans: "Inter Tight", "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-sans: var(--font-inter-tight, "Inter Tight"), "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 
   --text-caption: 0.75rem;                                   /* 12 */
@@ -149,6 +149,14 @@
   .js [data-in] > * { transition-delay: min(calc((var(--sibling-index, 1) - 1) * 80ms), 320ms); transition-delay: min(calc((sibling-index() - 1) * 80ms), 320ms); }
   .js [data-in].in > *, .js [data-in][data-paso].in { opacity: 1; transform: none; }
   .js [data-paso][data-in] > * { opacity: 1; transform: none; }
+}
+
+/* Entrada de la portada sin esperar al JavaScript: empieza en la primera pintura (no retrasa el LCP) */
+@media (prefers-reduced-motion: no-preference) {
+  .entra > * { animation: aparecer .7s var(--ease-brand) both; }
+  .entra > :nth-child(2) { animation-delay: 80ms; }
+  .entra > :nth-child(3) { animation-delay: 160ms; }
+  .entra > :nth-child(n+4) { animation-delay: 240ms; }
 }
 
 @keyframes subir { from { transform: translateY(100%); } }

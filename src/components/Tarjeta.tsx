@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { money } from "@/lib/catalogo";
 import { COMUNIDAD } from "@/lib/config";
 import { abrirFicha, alternarComparar, useApp, useI18n } from "@/lib/store";
@@ -15,13 +16,14 @@ export function Tarjeta({ p }: { p: Producto }) {
   return (
     <article className="@container flex min-w-0 flex-col" data-tarjeta>
       <div className="relative overflow-clip rounded-box border border-frost bg-mist">
-        <button className="group/img block aspect-square w-full overflow-clip border-0 bg-transparent p-0" type="button" aria-label={t("card.viewPhotos", { t: titulo })} onClick={() => abrirFicha(p.id)}>
-          <img className="size-full object-cover transition-transform duration-500 ease-brand group-hover/img:scale-[1.04]" src={p.imagenes[0]} alt={titulo} loading="lazy" />
+        <button className="group/img relative block aspect-square w-full overflow-clip border-0 bg-transparent p-0" type="button" aria-label={t("card.viewPhotos", { t: titulo })} onClick={() => abrirFicha(p.id)}>
+          <Image className="object-cover transition-transform duration-500 ease-brand group-hover/img:scale-[1.04]" src={p.imagenes[0]} alt={titulo} fill
+            sizes="(max-width: 640px) 50vw, (max-width: 1080px) 33vw, 260px" />
         </button>
         {p.descuento > 0 && <span className="absolute top-2.5 left-2.5 rounded-full bg-indigo px-[9px] py-[3px] text-caption font-medium text-white tabular-nums max-sm:top-1.5 max-sm:left-1.5 max-sm:px-[7px] max-sm:py-0.5 max-sm:text-mini">-{p.descuento}%</span>}
         {p.imagenes.length > 1 && <span className="absolute bottom-2.5 left-2.5 rounded-full bg-paper px-2 py-0.5 text-caption font-normal text-steel max-sm:hidden">{t("card.photos", { n: p.imagenes.length })}</span>}
         <button
-          className="group/cmp absolute top-2.5 right-2.5 inline-flex items-center gap-1.5 rounded-box border border-frost bg-paper px-[9px] py-1 text-caption font-normal text-midnight transition-[border-color,background-color,color] duration-200 hover:border-lavender hover:text-indigo aria-pressed:border-lilac aria-pressed:bg-wash aria-pressed:text-indigo tactil:sm:min-h-11 tactil:sm:min-w-11 max-sm:top-1.5 max-sm:right-1.5 max-sm:gap-[3px] max-sm:px-1.5 max-sm:py-[3px] max-sm:text-mini max-sm:leading-[1.3]"
+          className="group/cmp absolute top-2.5 right-2.5 inline-flex items-center justify-center gap-1.5 rounded-box border border-frost bg-paper px-[9px] py-1 text-caption font-normal text-midnight transition-[border-color,background-color,color] duration-200 hover:border-lavender hover:text-indigo aria-pressed:border-lilac aria-pressed:bg-wash aria-pressed:text-indigo tactil:top-2 tactil:right-2 tactil:min-h-11 tactil:min-w-11 max-sm:top-2 max-sm:right-2 max-sm:min-h-11 max-sm:min-w-11 max-sm:gap-1 max-sm:px-2 max-sm:text-mini max-sm:leading-[1.3]"
           type="button" aria-pressed={enComp} aria-label={t("card.compareX", { t: titulo })} onClick={() => alternarComparar(p.id)}>
           <I.Mas className="size-3 transition-transform duration-[250ms] ease-brand group-aria-pressed/cmp:rotate-45 max-sm:size-2.5" />
           <span>{t(enComp ? "card.compareOn" : "card.compare")}</span>

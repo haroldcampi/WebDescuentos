@@ -1,4 +1,5 @@
 /* «Mis alertas»: los productos que sigue el usuario, primero los que han bajado de precio */
+import Image from "next/image";
 import { catalogo, money } from "@/lib/catalogo";
 import { alternarSeguir, bajadas, marcarSeguidoVisto } from "@/lib/cuenta";
 import { abrirAcceso, abrirAlertas, abrirFicha, useApp, useI18n } from "@/lib/store";
@@ -41,7 +42,7 @@ function Seguidos() {
             : p.precio > visto ? t("follow.up", { b: money.format(p.precio) }) : t("follow.same", { b: money.format(p.precio) }));
         return (
           <li key={id} className="flex items-center gap-3 border-b border-frost py-3.5 max-sm:flex-wrap">
-            <img className="size-11 flex-none rounded-box border border-frost bg-mist object-cover" src={p.imagenes[0]} alt="" />
+            <Image className="size-11 flex-none rounded-box border border-frost bg-mist object-cover" src={p.imagenes[0]} alt="" width={44} height={44} />
             <div className="flex min-w-0 flex-1 flex-col gap-0.5">
               <b className="line-clamp-2 text-small font-normal [overflow-wrap:anywhere]">{i.tit(p)}</b>
               <span className={cx("text-small font-normal", bajo ? "text-indigo" : "text-slate")}>{estado}</span>
