@@ -2,7 +2,7 @@
    La primera imagen va en grande y su ficha se muestra a la izquierda.
    Se pausa con el ratón encima, con el foco dentro o con la pestaña oculta. */
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { money, porDescuento } from "@/lib/catalogo";
 import { EN_GIRO, ROTAR_CADA } from "@/lib/config";
@@ -16,7 +16,7 @@ export function Destacadas() {
   // Se calcula ya en el primer render (va en el HTML compilado) y otra vez cuando el reloj pasa a la hora del visitante
   const ahora = useApp((s) => s.ahora);
   const [giro, setGiro] = useState<Producto[]>(() => porDescuento().slice(0, EN_GIRO));
-  const [cambia, setCambia] = useState(false);
+  const [girado, setGirado] = useState(false);
   const track = useRef<HTMLDivElement>(null), pausa = useRef(false);
   const primero = useRef<Producto | null>(giro[0] || null);
 
@@ -35,12 +35,11 @@ export function Destacadas() {
       // Al terminar: el primero pasa al final y el siguiente se agranda
       const cerrar = () => {
         el.style.transition = "none";
-        flushSync(() => { setGiro((g) => [...g.slice(1), g[0]]); setCambia(false); });
+        flushSync(() => { setGiro((g) => [...g.slice(1), g[0]]); setGirado(true); });
         el.style.transform = "";
         void el.offsetWidth;
         el.style.transition = "";
       };
-      setCambia(true);
       if (matchMedia("(prefers-reduced-motion: reduce)").matches) return cerrar();
       const dx = first.getBoundingClientRect().width + 8;
       el.style.transition = "transform .7s cubic-bezier(0.22, 1, 0.36, 1)";
@@ -65,16 +64,16 @@ export function Destacadas() {
       <div className="col-span-4 flex flex-col max-tab:col-span-full max-tab:mb-10 max-tab:grid max-tab:grid-cols-2 max-tab:gap-x-8 max-sm:mb-6 max-sm:flex entra">
         <p className={cx(EYEBROW, "max-tab:col-start-1")}>{t("top.eyebrow")}</p>
         <h2 className="text-head max-tab:col-start-1" id="destacadas-title">{t("top.title")}</h2>
-        <div className={cx("mt-8 flex min-h-[200px] flex-col items-start gap-2.5 border-t border-frost pt-6 max-tab:col-start-2 max-tab:row-span-2 max-tab:row-start-1 max-tab:mt-0 max-sm:mt-6 max-sm:min-h-[190px] [&>*]:transition-opacity [&>*]:duration-300",
-          cambia && "[&>*]:opacity-0")} aria-label={t("top.dealAria")}>
-          {p && <>
+        <div className={cx("mt-8 flex min-h-[200px] flex-col items-start gap-2.5 border-t border-frost pt-6 max-tab:col-start-2 max-tab:row-span-2 max-tab:row-start-1 max-tab:mt-0 max-sm:mt-6 max-sm:min-h-[190px]",
+          girado && "motion-safe:[&>*]:animate-cambio")} aria-label={t("top.dealAria")}>
+          {p && <Fragment key={p.id}>
             <span className="text-caption font-normal uppercase tracking-label text-indigo">{t(p === primero.current ? "top.dealOfDay" : "top.featured")}</span>
             <Etiquetas p={p} className="m-0" />
             <h3 className="max-w-[22ch] text-sub">{i.tit(p)}</h3>
             <Precios p={p} />
             <p className="text-small font-normal text-steel">{t("top.saveIn", { a: money.format(p.ahorro), d: p.descuento, s: p.tienda })}</p>
             <EnlaceCompra p={p}>{t("top.seeDeal", { s: p.tienda })}</EnlaceCompra>
-          </>}
+          </Fragment>}
         </div>
       </div>
       <div className="col-span-8 col-start-5 min-h-[calc(var(--big)+34px)] overflow-clip max-tab:col-span-full max-tab:col-start-1"
@@ -89,7 +88,7 @@ export function Destacadas() {
                   {/* La primera foto es la más grande de la portada (LCP): sin carga diferida y con prioridad alta */}
                   <Image className="object-cover transition-transform duration-500 ease-brand group-hover/run:scale-[1.04] motion-reduce:transition-none"
                     src={x.imagenes[0]} alt={i.tit(x)} fill sizes={grande ? "(max-width: 640px) 44vw, 240px" : "(max-width: 640px) 21vw, 150px"}
-                    {...(x === primero.current ? { fetchPriority: "high" as const, loading: "eager" as const, preload: !x.imagenes[0].startsWith("data:") } : {})} />
+                    {...(x === primero.current ? { fetchPriority: "high" as const, loading: "eager" as const, decoding: "sync" as const, preload: !x.imagenes[0].startsWith("data:") } : {})} />
                 </button>
                 <span className={cx("mt-2.5 flex justify-between gap-2 text-small font-normal", !grande && "max-sm:flex-col max-sm:gap-0.5")}>
                   <span className="truncate text-steel">{x.tienda}</span>

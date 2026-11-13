@@ -1,10 +1,9 @@
 /* Franja del próximo gran evento de rebajas (Black Friday, Cyber Monday…). Se configura en config.ts (EVENTOS). */
 import { useState } from "react";
 import { DIA, reloj } from "@/lib/catalogo";
-import { EVENTOS } from "@/lib/config";
+import { COMUNIDAD, EVENTOS } from "@/lib/config";
 import { pedirCuenta } from "@/lib/cuenta";
 import { abrirAlertas, useApp, useI18n } from "@/lib/store";
-import { sb } from "@/lib/supabase";
 import * as I from "./iconos";
 import { GHOST, cx } from "./ui";
 
@@ -37,7 +36,7 @@ export function Evento() {
           <b className="font-medium text-indigo">{dias === 0 ? t("event.today", { e: ev.nombre }) : dias === 1 ? t("event.tomorrow", { e: ev.nombre }) : t("event.in", { e: ev.nombre, n: dias })}</b> <span>{t("event.tip")}</span>
         </p>
         <button className={cx(GHOST, "bg-paper px-3 py-[7px] max-sm:order-3 [&_svg]:size-3.5")} type="button"
-          onClick={() => { if (sb() && !usuario) return pedirCuenta("auth.reasonFollow"); abrirAlertas(); }}>
+          onClick={() => { if (COMUNIDAD && !usuario) return pedirCuenta("auth.reasonFollow"); abrirAlertas(); }}>
           <I.Campana />{t("event.cta")}
         </button>
         <button className="size-8 flex-none rounded-box border-0 bg-transparent text-xl text-steel hover:bg-paper hover:text-midnight" type="button" aria-label={t("sheet.close")}

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { pedirCuenta } from "@/lib/cuenta";
 import { abrirAcceso, useApp, useI18n } from "@/lib/store";
+import { COMUNIDAD } from "@/lib/config";
 import { api, sb } from "@/lib/supabase";
 import type { ConfigAvatar } from "@/lib/tipos";
 import { Avatar, MiAvatar } from "./Avatar";
@@ -51,7 +52,7 @@ function UnComentario({ c, alOcultar }: { c: Comentario; alOcultar: () => void }
           <time className="text-caption font-normal whitespace-nowrap text-slate" dateTime={c.creado}>{i.fechaHora(c.creado)}</time>
         </header>
         <p className="text-small leading-normal font-normal whitespace-pre-line [overflow-wrap:anywhere]">{c.texto}</p>
-        {sb() && c.nombre !== perfil && <Reportar id={c.id} alOcultar={alOcultar} />}
+        {COMUNIDAD && c.nombre !== perfil && <Reportar id={c.id} alOcultar={alOcultar} />}
       </div>
     </article>
   );
@@ -91,7 +92,7 @@ function CajaComentar({ id, alEnviar }: { id: string; alEnviar: () => Promise<vo
   const { t } = useI18n();
   const usuario = useApp((s) => s.usuario), perfil = useApp((s) => s.perfil);
   const [texto, setTexto] = useState(""), [msg, setMsg] = useState(""), [enviando, setEnviando] = useState(false);
-  if (!sb()) return null;
+  if (!COMUNIDAD) return null;
   const cta = "flex flex-wrap items-center justify-between gap-4 rounded-box bg-mist p-5 [&_p]:flex-[1_1_260px] [&_p]:text-small [&_p]:font-normal [&_p]:text-steel";
   if (!usuario) return <div className={cta}><p>{t("com.login")}</p><button className={BTN} type="button" onClick={() => abrirAcceso("entrar")}>{t("com.loginBtn")}</button></div>;
   if (!perfil) return <div className={cta}><p>{t("com.needUser")}</p><button className={BTN} type="button" onClick={() => abrirAcceso("usuario")}>{t("com.needUserBtn")}</button></div>;

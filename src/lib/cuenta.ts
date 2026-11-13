@@ -1,10 +1,11 @@
 /* Cuentas de usuario (Supabase Auth): favoritos, productos seguidos y perfil (nombre de usuario y avatar).
    Entrar con email y contraseña o con Google. Google hay que activarlo en Supabase (Authentication > Providers). */
-import type { AuthError, User } from "@supabase/supabase-js";
+import type { AuthError, SupabaseClient, User } from "@supabase/supabase-js";
 import { limpiarAvatar } from "./avatar";
 import { catalogo } from "./catalogo";
 import { abrirAcceso, abrirAlertas, cerrarAcceso, i18nActual, useApp, type ModoAcceso } from "./store";
-import { sb } from "./supabase";
+import { COMUNIDAD } from "./config";
+import { cargarSb, haySesionGuardada, sb } from "./supabase";
 
 const set = useApp.setState, get = useApp.getState;
 
@@ -53,8 +54,9 @@ async function cargarCuenta() {
 }
 
 export async function alternarFavorito(id: string) {
-  const cliente = sb(); if (!cliente) return;
+  if (!COMUNIDAD) return;
   if (!get().usuario) return pedirCuenta("auth.reasonFav", () => alternarFavorito(id));
+  const cliente = sb(); if (!cliente) return;
   const on = get().favoritos.has(id);
   const cambiar = (poner: boolean) => set((s) => { const f = new Set(s.favoritos); poner ? f.add(id) : f.delete(id); return { favoritos: f }; });
   cambiar(!on);
@@ -63,8 +65,9 @@ export async function alternarFavorito(id: string) {
 }
 
 export async function alternarSeguir(id: string) {
-  const cliente = sb(); if (!cliente) return;
+  if (!COMUNIDAD) return;
   if (!get().usuario) return pedirCuenta("auth.reasonFollow", () => alternarSeguir(id));
+  const cliente = sb(); if (!cliente) return;
   const p = catalogo().porId.get(id); if (!p) return;
   const on = get().seguidos.has(id), antes = get().seguidos.get(id), objAntes = get().objetivos.get(id);
   set((s) => {
@@ -127,7 +130,7 @@ export function errorAcceso(e: unknown) {
 let revision: { v: string; libre: boolean | null } = { v: "", libre: null };
 export async function usuarioLibre(v: string) {
   if (revision.v === v && revision.libre !== null) return revision.libre;
-  const { data, error } = await sb()!.rpc("usuario_disponible", { p_usuario: v });
+  const { data, error } = await (await asegurarCuenta())!.rpc("usuario_disponible", { p_usuario: v });
   if (error) throw error;
   revision = { v, libre: !!data };
   return !!data;
@@ -143,11 +146,19 @@ export function alCerrarAcceso() {
 
 export async function salir() { await sb()?.auth.signOut(); }
 
-/* Arranque: sesión, vuelta del email o de Google, y ventanita de Google */
-let iniciada = false;
+/* Arranque. Al abrir la web solo se carga Supabase si hay una sesión guardada o se vuelve de Google o del email.
+   En los demás casos se carga la primera vez que hace falta (al abrir la ventana de cuenta): asegurarCuenta(). */
+let conexion: Promise<SupabaseClient | null> | null = null;
+export function asegurarCuenta() {
+  if (!conexion) conexion = cargarSb().then((c) => { if (c) conectar(c); return c; });
+  return conexion;
+}
 export function iniciarCuenta() {
-  const cliente = sb(); if (!cliente || iniciada) return;
-  iniciada = true;
+  if (haySesionGuardada()) asegurarCuenta().catch((e) => console.error(e));
+}
+
+// Sesión, vuelta del email o de Google, y ventanita de Google
+function conectar(cliente: SupabaseClient) {
   const { t } = i18nActual();
   const q = new URLSearchParams(location.search), h = new URLSearchParams(location.hash.replace(/^#/, ""));
   const limpiarDireccion = () => {
@@ -209,9 +220,11 @@ export function iniciarCuenta() {
 
 /* Google se abre en una ventanita: la web se queda donde está. Si el navegador la bloquea, se usa la redirección normal. */
 export async function entrarConGoogle(): Promise<string | null> {
-  const cliente = sb(); if (!cliente) return null;
+  if (!COMUNIDAD) return null;
+  // La ventanita se abre antes de esperar nada: si no, el navegador la bloquea
   const ventana = window.open("", "radar-login", "width=500,height=640,left=" + Math.max(0, (screen.width - 500) / 2) + ",top=" + Math.max(0, (screen.height - 640) / 2));
   try {
+    const cliente = await asegurarCuenta(); if (!cliente) throw new Error("sin cliente");
     const { data, error } = await cliente.auth.signInWithOAuth({ provider: "google", options: { redirectTo: volverAqui() + "?popup=1", skipBrowserRedirect: true } });
     if (error) throw error;
     if (ventana && !ventana.closed) ventana.location.href = data.url;
