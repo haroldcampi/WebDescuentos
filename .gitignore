@@ -22,6 +22,11 @@ skills-lock.json
 
 # Informes de auditoría de seguridad: nunca al repositorio (es público)
 audits/
+AUDITORIA.md
+
+# Notas y conversaciones de trabajo: no se publican
+chat-completo.md
+resumen.md
 
 # Next.js
 .next/

@@ -28,24 +28,30 @@ export interface ProductoBase {
 
 // Producto listo para la web: con descuento, ahorro, texto de búsqueda y fotos (reales o provisionales)
 export interface Producto extends ProductoBase {
+  // Precio oculto (Amazon con precio de más de 24 h): sin precio, descuento, historial ni alerta
+  sinPrecio: boolean;
   descuento: number;
   ahorro: number;
   imagenes: string[];
   _texto: string;
 }
 
-export type Orden = "relevancia" | "tendencias" | "recientes" | "popularidad" | "descuento" | "ahorro" | "precio-asc" | "precio-desc" | "valoracion";
-export type Grupo = "ninguno" | "tipo" | "categoria" | "tienda" | "marca";
+export type Orden = "destacadas" | "popularidad" | "descuento" | "precio-asc" | "min90";
+// Qué muestra la portada: todas las ofertas, las guardadas (favoritos) o las alertas de precio
+export type Vista = "catalogo" | "favoritos" | "alertas";
 
 export interface Filtros {
   q: string;
   categoria: string;
+  // Tienda elegida en la franja de filtros (vacío = todas)
   tiendas: string[];
   orden: Orden;
-  grupo: Grupo;
-  favoritos: boolean;
+  // Solo ofertas en su precio más bajo de los últimos 90 días
+  min90: boolean;
+  // Rango de precio en dólares (0 = sin límite)
   min: number;
   max: number;
+  vista: Vista;
 }
 
 export interface ConfigAvatar {

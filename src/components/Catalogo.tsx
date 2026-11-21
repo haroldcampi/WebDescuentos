@@ -1,183 +1,139 @@
-/* Catálogo: título y recuento, menús de orden y agrupado, categorías, filtros (tiendas y precio) y rejilla por tandas */
-import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { GRUPOS, ORDENES, catalogo, categoriasOrdenadas, claveGrupo, contar, filtrar, money, nombreGrupo, precioMaximo } from "@/lib/catalogo";
-import { bajarA, destinoBusqueda } from "@/lib/scroll";
-import { cambiarFiltros, limpiarFiltros, useApp, useI18n, verMas } from "@/lib/store";
-import type { Filtros } from "@/lib/tipos";
+/* Catálogo: título y recuento, panel de alertas (vista Alertas), rejilla de ofertas y estado vacío.
+   Los filtros (tiendas, mínimo 90 días, categorías y orden) están en la franja de la cabecera. */
+import { ArrowLeft, BellRing, SearchX, Trash2 } from "lucide-react";
+import Image from "next/image";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { catalogo, filtrar, money, precioMaximo } from "@/lib/catalogo";
+import { alternarSeguir, bajadas } from "@/lib/cuenta";
+import { abrirAcceso, abrirFicha, cambiarFiltros, irAVista, limpiarFiltros, useApp, useI18n, verMas } from "@/lib/store";
 import { Anuncio } from "./Anuncio";
-import * as I from "./iconos";
-import { Menu } from "./Menu";
-import { ConValor, HUECO, MarcaTienda } from "./piezas";
+import { GestionAlertas } from "./GestionAlertas";
 import { Tarjeta } from "./Tarjeta";
-import { CHIP, EYEBROW, GHOST, LABEL, LINKBTN, cx } from "./ui";
-
-const PANEL = "mb-2 rounded-box border border-frost bg-paper p-5";
-const leer = (v: string) => { const n = parseFloat(String(v).replace(",", ".")); return n > 0 ? n : 0; };
+import { BTN, GHOST, LINKBTN, cx } from "./ui";
 
 export function Catalogo() {
   const i = useI18n(), { t } = i;
   const ahora = useApp((s) => s.ahora);
   const f = useApp((s) => s.filtros), visibles = useApp((s) => s.visibles);
   const favoritos = useApp((s) => s.favoritos), votos = useApp((s) => s.votos);
-  const [sideAbierto, setSideAbierto] = useState(false);
 
-  const { lista, cuentaGrupos } = useMemo(
-    () => filtrar(f, favoritos, votos, i),
+  const lista = useMemo(() => filtrar(f, favoritos, votos),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [ahora, f, favoritos, votos, i.lang]
-  );
+    [ahora, f, favoritos, votos]);
   const tope = Math.min(Math.max(visibles, 24), Math.max(lista.length, 24));
-  const mostrados = lista.slice(0, tope);
   const quedan = lista.length - tope;
 
+  // «Ver más»: las tarjetas nuevas entran una tras otra (desde la primera nueva). Al filtrar, sin animación.
+  const topeAntes = useRef(tope);
+  const desde = tope > topeAntes.current ? topeAntes.current : Infinity;
+  useEffect(() => { topeAntes.current = tope; }, [tope]);
+
   // «Ver más»: el foco pasa a la primera tarjeta nueva
-  const rejilla = useRef<HTMLDivElement>(null), focoEn = useRef<number | null>(null);
+  const rejilla = useRef<HTMLElement>(null), focoEn = useRef<number | null>(null);
   useEffect(() => {
     if (focoEn.current === null) return;
     rejilla.current?.querySelectorAll("[data-tarjeta]")[focoEn.current]?.querySelector("button")?.focus({ preventScroll: true });
     focoEn.current = null;
   }, [tope]);
 
-  let titulo = t("cat.allDeals");
-  if (f.favoritos) titulo = t("fav.title");
-  else if (f.q) titulo = t("results.for", { q: f.q });
-  else if (f.categoria !== "Todas") titulo = i.cat(f.categoria);
-  else if (f.tiendas.length === 1) titulo = t("results.store", { s: f.tiendas[0] });
-  // En móvil los filtros están plegados: el botón dice cuántos hay activos
-  const activos = f.tiendas.length + (f.categoria !== "Todas" ? 1 : 0) + (f.min || f.max ? 1 : 0);
-  const nt = new Set(lista.map((p) => p.tienda)).size;
+  if (f.vista === "alertas") return <GestionAlertas />;
 
-  // Rejilla con un encabezado al empezar cada grupo
-  const piezas: ReactNode[] = [];
-  mostrados.forEach((p, n) => {
-    if (f.grupo !== "ninguno") {
-      const g = claveGrupo(f.grupo, p);
-      if (n === 0 || claveGrupo(f.grupo, mostrados[n - 1]) !== g) piezas.push(
-        <h3 key={"g-" + g} className="col-span-full flex items-center gap-2.5 border-b border-frost pb-3 text-sub not-first:mt-6 max-sm:text-lead">
-          {f.grupo === "categoria" ? <I.IcoCategoria c={g} size={20} className="text-indigo" /> : f.grupo === "tienda" ? <MarcaTienda t={g} className="size-2.5" /> : null}
-          <span>{nombreGrupo(f.grupo, g, i)}</span><span className="text-small font-normal text-slate tabular-nums">{cuentaGrupos.get(g) || ""}</span>
-        </h3>
-      );
-    }
-    piezas.push(<Tarjeta key={p.id} p={p} />);
-  });
-
-  const vacio = f.favoritos
-    ? <div className="col-span-full rounded-box border border-frost bg-mist p-8">{t("fav.empty")} <button className={LINKBTN} type="button" onClick={limpiarFiltros}>{t("results.emptyBtn")}</button>.</div>
-    : <div className="col-span-full rounded-box border border-frost bg-mist p-8">
-        <strong className="font-medium">{f.q ? t("results.emptyQueryTitle", { q: f.q }) : t("results.emptyTitle")}</strong><br />
-        {t(f.q ? "results.emptyQueryText" : "results.emptyText")} <button className={LINKBTN} type="button" onClick={limpiarFiltros}>{t(f.q ? "results.emptyQueryBtn" : "results.emptyBtn")}</button>.
-      </div>;
+  const titulo = f.vista === "favoritos" ? t("d.titleFavs")
+    : f.q ? t("d.titleSearch", { q: f.q }) : f.min90 ? t("d.titleMin90") : t("d.title");
 
   return (
-    <section className="wrap mt-(--space-pause)" id="catalogo" aria-labelledby="titulo">
-      <div className="flex flex-wrap items-end justify-between gap-6">
-        <div>
-          <p className={EYEBROW}>{t("deals.eyebrow")}</p>
-          <h2 id="titulo" className="text-head">{titulo}</h2>
-          <p className="mt-3 text-small font-normal text-slate">
-            {`${t(lista.length === 1 ? "results.products1" : "results.productsN", { n: lista.length })} · ${t(nt === 1 ? "results.stores1" : "results.storesN", { n: nt })}`}
-          </p>
+    <main id="inicio" className="wrap flex-1 py-6">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2.5">
+          <h1 id="titulo" className="text-lg font-bold tracking-tight text-slate-900 sm:text-xl">{titulo}</h1>
+          <span className="rounded-full bg-slate-200/80 px-2.5 py-0.5 text-xs font-semibold text-slate-600 tabular-nums">
+            {t(lista.length === 1 ? "d.count1" : "d.countN", { n: lista.length })}
+          </span>
         </div>
-        <div className="flex flex-wrap items-center gap-2 max-sm:w-full max-sm:gap-x-2 max-sm:gap-y-1">
-          <button className="hidden cursor-pointer rounded-box border border-frost bg-paper px-3.5 py-2.5 text-small font-normal text-indigo transition-[border-color] duration-200 hover:border-lavender aria-expanded:border-lavender aria-expanded:bg-wash max-tab:inline-block tactil:min-h-11"
-            id="toggle-filtros" type="button" aria-controls="side" aria-expanded={sideAbierto} onClick={() => setSideAbierto((v) => !v)}>
-            {activos ? t("tools.filtersN", { n: activos }) : t("tools.filters")}
+        {f.vista !== "catalogo" && (
+          <button type="button" onClick={() => irAVista("catalogo")}
+            className="flex items-center gap-1 rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-acento hover:text-indigo-800 dark:hover:text-indigo-800 tactil:min-h-11">
+            <ArrowLeft className="size-3.5" aria-hidden="true" />{t("d.back")}
           </button>
-          <Menu<Filtros["grupo"]> id="menu-grupo" etiqueta={t("group.label")} titulo={t("group.menu")} icono={<I.Rejilla />} valor={f.grupo} opciones={GRUPOS}
-            nombre={(v) => t("group." + v)} onCambio={(v) => cambiarFiltros({ grupo: v })} popClassName="max-sm:right-auto max-sm:left-0 max-sm:min-w-[220px]" />
-          <Menu<Filtros["orden"]> id="menu-orden" etiqueta={t("sort.label")} titulo={t("sort.menu")} icono={<I.Ordenar />} valor={f.orden} opciones={ORDENES}
-            nombre={(v) => t("sort." + v)} onCambio={(v) => cambiarFiltros({ orden: v })} popClassName="max-sm:min-w-[220px]"
-            className="ml-3 border-l border-frost pl-4 max-sm:ml-0 max-sm:pl-2.5" />
-        </div>
+        )}
       </div>
 
-      <nav className="mt-8 flex flex-wrap gap-2" id="cats" aria-label={t("cat.aria")}>
-        {[["Todas", catalogo().lista.length] as [string, number], ...categoriasOrdenadas(i)].map(([c, n]) => (
-          <button key={c} className={cx(CHIP, "group")} type="button" aria-pressed={c === f.categoria} onClick={() => cambiarFiltros({ categoria: c })}>
-            <I.IcoCategoria c={c} />{i.cat(c)}<span className="text-slate tabular-nums group-aria-pressed:text-indigo">{n}</span>
-          </button>
-        ))}
-      </nav>
-
-      <div className="mt-8 grid grid-cols-[240px_1fr] items-start gap-10 max-tab:grid-cols-1">
-        <aside className={cx("sticky top-[calc(var(--head-h)+16px)] max-tab:static", sideAbierto ? "max-tab:grid max-tab:grid-cols-2 max-tab:gap-2 max-sm:grid-cols-1" : "max-tab:hidden")}
-          id="side" aria-label={t("side.aria")}>
-          <section className={cx(PANEL, "max-tab:m-0")}>
-            <h3 className={cx(LABEL, "mb-3")}>{t("side.stores")}</h3>
-            <div>
-              {contar("tienda").map(([tienda, n]) => (
-                <label key={tienda} className="flex cursor-pointer items-center gap-2.5 py-1.5 text-small font-normal tactil:min-h-11">
-                  <input className="m-0 size-4 accent-indigo tactil:size-5" type="checkbox" value={tienda} checked={f.tiendas.includes(tienda)}
-                    onChange={(e) => cambiarFiltros({ tiendas: e.target.checked ? [...f.tiendas, tienda] : f.tiendas.filter((x) => x !== tienda) })} />
-                  <span className="inline-flex items-center gap-2"><MarcaTienda t={tienda} />{tienda}</span>
-                  <span className="ml-auto text-slate tabular-nums">{n}</span>
-                </label>
-              ))}
-            </div>
-          </section>
-          <FiltroPrecio className={cx(PANEL, "max-tab:m-0")} />
-          <button className={cx(LINKBTN, "mt-3")} type="button" onClick={limpiarFiltros}>{t("side.clear")}</button>
-          <Anuncio sitio="lateral" texto={t("ad.side")} margen={cx("mt-6", sideAbierto && "max-tab:hidden")} alto="min-h-[250px]" />
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[260px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)] xl:gap-5">
+        <aside className="flex flex-col gap-3 lg:sticky lg:top-36" aria-label={t("side.aria")}>
+          <FiltroPrecio />
+          <button className={cx(LINKBTN, "self-start")} type="button" onClick={limpiarFiltros}>{t("side.clear")}</button>
         </aside>
 
-        <div id="resultados">
-          {f.q && (
-            <div className="mb-8 flex flex-wrap items-center justify-between gap-x-4 gap-y-3 rounded-box bg-wash p-6">
-              <p><ConValor texto={t("ew.title", { q: HUECO })} valor={<strong className="font-medium">“{f.q}”</strong>} /></p>
-              <button className="inline-flex min-h-10 items-center gap-1.5 rounded-box border border-lilac bg-paper px-3.5 text-small transition-[border-color,color] duration-200 hover:border-indigo hover:text-indigo tactil:min-h-11" type="button"
-                onClick={() => { cambiarFiltros({ q: "" }); requestAnimationFrame(() => bajarA(destinoBusqueda())); }}>
-                <span className="text-[1.25em] leading-none" aria-hidden="true">×</span> {t("search.clear")}
-              </button>
-            </div>
-          )}
-          <div ref={rejilla} className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-x-6 gap-y-12 max-sm:grid-cols-2 max-sm:gap-x-3 max-sm:gap-y-9">
-            {piezas.length ? piezas : vacio}
-          </div>
-          {quedan > 0 && (
-            <button className={cx(GHOST, "mt-12 flex w-full")} type="button" onClick={() => { focoEn.current = tope; verMas(); }}>
-              {t("results.more", { n: Math.min(24, quedan), total: quedan })}
-            </button>
-          )}
+        <div className="min-w-0">
+
+      <Anuncio sitio="superior" margen="mb-5" alto="min-h-24" />
+
+      {lista.length ? (
+        <section ref={rejilla} className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5 xl:gap-3" aria-labelledby="titulo">
+          {lista.slice(0, tope).map((p, n) => <Tarjeta key={p.id} p={p} prioridad={n === 0 ? 0 : n < 5 ? 1 : undefined} entrada={n >= desde ? n - desde : undefined} />)}
+        </section>
+      ) : f.vista === "favoritos" ? (
+        <Vacio titulo={t("d.favsEmptyTitle")} texto={t("d.favsEmptyText")} boton={t("d.back")} onClick={() => irAVista("catalogo")} />
+      ) : (
+        <Vacio titulo={t("d.emptyTitle")} texto={t("d.emptyText")} boton={t("d.emptyBtn")} onClick={limpiarFiltros} />
+      )}
+
+      {quedan > 0 && (
+        <button className={cx(GHOST, "mt-8 flex w-full")} type="button" onClick={() => { focoEn.current = tope; verMas(); }}>
+          {t("results.more", { n: Math.min(24, quedan), total: quedan })}
+        </button>
+      )}
+
+      <Anuncio sitio="inferior" margen="mt-8" alto="min-h-24" />
         </div>
       </div>
-    </section>
+    </main>
+  );
+}
+
+function Vacio({ titulo, texto, boton, onClick }: { titulo: string; texto: string; boton: string; onClick: () => void }) {
+  return (
+    <div className="my-4 flex flex-col items-center justify-center rounded-2xl border border-slate-200/80 bg-card px-4 py-16 text-center">
+      <div className="mb-3 flex size-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400"><SearchX className="size-7" aria-hidden="true" /></div>
+      <h2 className="text-base font-bold text-slate-900">{titulo}</h2>
+      <p className="mt-1 max-w-md text-sm text-slate-500">{texto}</p>
+      <button type="button" onClick={onClick} className={cx(BTN, "mt-4 px-4 py-2")}>{boton}</button>
+    </div>
   );
 }
 
 /* Precio: barra del máximo y, a mano, un rango «Desde» – «Hasta» en dólares (vacío = sin límite) */
-function FiltroPrecio({ className }: { className?: string }) {
+function FiltroPrecio() {
   const { t } = useI18n();
-  useApp((s) => s.ahora);
   const min = useApp((s) => s.filtros.min), max = useApp((s) => s.filtros.max);
   const tope = precioMaximo();
-  const [txtMin, setTxtMin] = useState(""), [txtMax, setTxtMax] = useState("");
+  const leer = (v: string) => { const n = parseFloat(v.replace(",", ".")); return n > 0 ? n : 0; };
+  const [txtMin, setTxtMin] = useState(min ? String(min) : ""), [txtMax, setTxtMax] = useState(max ? String(max) : "");
   const espera = useRef<ReturnType<typeof setTimeout>>(undefined);
-  // Si los filtros cambian desde fuera (p. ej. «Borrar filtros»), los campos se ponen al día
+  // Si los filtros cambian desde fuera (borrar filtros), los campos se ponen al día
   useEffect(() => { if (leer(txtMin) !== min) setTxtMin(min ? String(min) : ""); }, [min]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (leer(txtMax) !== max) setTxtMax(max ? String(max) : ""); }, [max]); // eslint-disable-line react-hooks/exhaustive-deps
-  const escribir = (a: string, b: string) => {
-    setTxtMin(a); setTxtMax(b);
-    clearTimeout(espera.current);
-    espera.current = setTimeout(() => cambiarFiltros({ min: leer(a), max: leer(b) }), 200);
-  };
+  function escribir(a: string, b: string) {
+    setTxtMin(a); setTxtMax(b); clearTimeout(espera.current);
+    espera.current = setTimeout(() => cambiarFiltros({ min: leer(a), max: leer(b) }), 250);
+  }
   const malo = !!(min && max && min > max);
-  const campo = "w-full min-w-0 rounded-box border border-frost bg-paper px-2.5 py-[9px] text-small font-normal text-midnight focus:border-indigo focus:outline-none aria-invalid:border-error tactil:min-h-11";
+  const campo = "w-full min-w-0 rounded-xl border border-slate-200 bg-card px-2.5 py-2.5 text-sm text-slate-900 tabular-nums outline-none transition-[border-color,box-shadow] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 aria-invalid:border-rose-400 tactil:min-h-11";
   const texto = min && max ? t("range.fromTo", { a: money.format(min), b: money.format(max) }) : max ? t("range.upTo", { b: money.format(max) }) : min ? t("range.fromOnly", { a: money.format(min) }) : t("range.any");
   return (
-    <section className={className}>
-      <h3 className={cx(LABEL, "mb-3")}>{t("side.maxPrice")}</h3>
-      <input className="w-full accent-indigo" id="max" type="range" min={5} step={5} max={tope} value={max || tope} aria-label={t("side.maxAria")}
+    <section className="rounded-2xl border border-slate-200 bg-card p-5 shadow-2xs" aria-labelledby="precio-titulo">
+      <h2 id="precio-titulo" className="mb-3.5 text-xs font-semibold tracking-wider text-slate-500 uppercase">{t("side.maxPrice")}</h2>
+      <input className="h-2 w-full cursor-pointer accent-indigo-600" type="range" min={5} step={5} max={tope} value={max || tope} aria-label={t("side.maxAria")} aria-valuetext={texto}
         onChange={(e) => { const v = +e.target.value, m = v >= tope ? 0 : v; clearTimeout(espera.current); setTxtMax(m ? String(m) : ""); cambiarFiltros({ max: m }); }} />
-      <span className="mt-2 block text-small font-normal tabular-nums">{texto}</span>
-      <p className="mt-[18px] text-small text-slate" id="rango-lab">{t("range.lab")}</p>
-      <div className="mt-2 grid grid-cols-2 gap-2" role="group" aria-labelledby="rango-lab">
-        <label className="flex flex-col gap-1 text-caption font-normal text-steel"><span>{t("range.from")}</span>
-          <input className={campo} id="p-min" type="number" inputMode="decimal" min={0} step={1} placeholder="0" value={txtMin} aria-invalid={malo} onChange={(e) => escribir(e.target.value, txtMax)} /></label>
-        <label className="flex flex-col gap-1 text-caption font-normal text-steel"><span>{t("range.to")}</span>
-          <input className={campo} id="p-max" type="number" inputMode="decimal" min={0} step={1} placeholder={t("range.noLimit")} value={txtMax} aria-invalid={malo} onChange={(e) => escribir(txtMin, e.target.value)} /></label>
+      <p className="mt-3 text-base font-semibold text-slate-900 tabular-nums" aria-live="polite">{texto}</p>
+      <p className="mt-4 text-sm text-slate-500" id="rango-lab">{t("range.lab")}</p>
+      <div className="mt-2 grid grid-cols-2 gap-2.5" role="group" aria-labelledby="rango-lab">
+        <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600"><span>{t("range.from")}</span>
+          <input className={campo} type="number" inputMode="decimal" min={0} step={1} placeholder="0" value={txtMin} aria-invalid={malo} onChange={(e) => escribir(e.target.value, txtMax)} /></label>
+        <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600"><span>{t("range.to")}</span>
+          <input className={campo} type="number" inputMode="decimal" min={0} step={1} placeholder={t("range.noLimit")} value={txtMax} aria-invalid={malo} onChange={(e) => escribir(txtMin, e.target.value)} /></label>
       </div>
-      {malo && <p className="mt-2 text-small text-error" role="alert">{t("range.error")}</p>}
+      {malo && <p className="mt-2 text-xs font-medium text-rose-600" role="alert">{t("range.error")}</p>}
     </section>
   );
 }

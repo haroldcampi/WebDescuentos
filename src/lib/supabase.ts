@@ -17,6 +17,16 @@ const almacen = {
 /* La librería de Supabase (la parte más pesada del JavaScript) se descarga solo cuando hace falta:
    si hay una sesión guardada o se vuelve de un enlace de acceso, al abrir la web; si no, al abrir la ventana de cuenta.
    Los votos y la lista de comentarios no la necesitan (usan api(), más abajo). */
+/* Ninguna llamada a Supabase espera para siempre: a los 10 s se corta y la interfaz muestra el error.
+   (Sin AbortSignal.any / AbortSignal.timeout, que Safari 15 no tiene.) */
+const LIMITE_MS = 10_000;
+export function fetchConLimite(url: RequestInfo | URL, op: RequestInit = {}): Promise<Response> {
+  const ctl = new AbortController();
+  const reloj = setTimeout(() => ctl.abort(new DOMException("Tiempo de espera agotado", "TimeoutError")), LIMITE_MS);
+  if (op.signal) { if (op.signal.aborted) ctl.abort(op.signal.reason); else op.signal.addEventListener("abort", () => ctl.abort(op.signal!.reason), { once: true }); }
+  return fetch(url, { ...op, signal: ctl.signal }).finally(() => clearTimeout(reloj));
+}
+
 let cliente: SupabaseClient | null = null;
 let carga: Promise<SupabaseClient | null> | null = null;
 // El cliente si ya está cargado (siempre lo está cuando hay un usuario dentro); null si aún no
@@ -24,7 +34,7 @@ export const sb = () => cliente;
 export function cargarSb(): Promise<SupabaseClient | null> {
   if (!COMUNIDAD || typeof window === "undefined") return Promise.resolve(null);
   if (!carga) carga = import("@supabase/supabase-js").then(({ createClient }) =>
-    (cliente = createClient(SUPABASE.url, SUPABASE.clave, { auth: { flowType: "pkce", persistSession: true, detectSessionInUrl: true, storage: almacen } })));
+    (cliente = createClient(SUPABASE.url, SUPABASE.clave, { auth: { flowType: "pkce", persistSession: true, detectSessionInUrl: true, storage: almacen }, global: { fetch: fetchConLimite } })));
   return carga;
 }
 // ¿Hay una sesión guardada en este navegador, o venimos de Google o de un enlace del email?
@@ -38,7 +48,7 @@ export function haySesionGuardada() {
 
 // Llamadas anónimas a la API REST (votos y lista de comentarios)
 export async function api<R = unknown>(ruta: string, cuerpo?: unknown): Promise<R> {
-  const r = await fetch(`${SUPABASE.url.replace(/\/$/, "")}/rest/v1/${ruta}`, {
+  const r = await fetchConLimite(`${SUPABASE.url.replace(/\/$/, "")}/rest/v1/${ruta}`, {
     method: cuerpo ? "POST" : "GET",
     headers: { apikey: SUPABASE.clave, Authorization: `Bearer ${SUPABASE.clave}`, "Content-Type": "application/json" },
     body: cuerpo ? JSON.stringify(cuerpo) : undefined

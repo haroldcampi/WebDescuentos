@@ -1,13 +1,13 @@
-/* Piezas de cada oferta que se repiten en la tarjeta, la ficha, el carrusel y el comparador */
+/* Piezas de cada oferta que se repiten en la tarjeta y en la ficha */
+import { ArrowBigDown, ArrowBigUp, BadgeCheck, ThumbsDown, ThumbsUp, Clock, ExternalLink, Heart, Scissors, Sparkles, TrendingUp, TriangleAlert, Zap } from "lucide-react";
 import type { ReactNode } from "react";
 import { analisis, conSigno, esErrorPrecio, esNueva, money, quedan, urlSegura } from "@/lib/catalogo";
 import { COMUNIDAD, TIENDAS } from "@/lib/config";
 import { votar } from "@/lib/comunidad";
-import { alternarFavorito, alternarSeguir } from "@/lib/cuenta";
+import { alternarFavorito } from "@/lib/cuenta";
 import { useApp, useI18n } from "@/lib/store";
 import type { Producto } from "@/lib/tipos";
-import * as I from "./iconos";
-import { CTA, FLAG, FLAG_TIPO, GHOST, cx } from "./ui";
+import { CTA, FLAG, FLAG_TIPO, cx } from "./ui";
 
 // Frase con un hueco que lleva formato (negrita…): t("clave", { x: HUECO }) y aquí se pone el valor
 export const HUECO = "\u0000";
@@ -16,17 +16,16 @@ export function ConValor({ texto, valor }: { texto: string; valor: ReactNode }) 
   return <>{a}{valor}{z}</>;
 }
 
-// Cuadradito con el color de la tienda
+// Punto con el color de la tienda
 export const MarcaTienda = ({ t, className }: { t: string; className?: string }) => (
-  <i className={cx("size-2 flex-none rounded-[2px]", className)} style={{ background: TIENDAS[t] || "#888" }} />
+  <span className={cx("size-1.5 flex-none rounded-full", className)} style={{ background: TIENDAS[t] || "#94a3b8" }} />
 );
 
-// Tienda · categoría
-export function Tienda({ p, className }: { p: Producto; className?: string }) {
-  const i = useI18n();
+// Insignia de la tienda (esquina de la foto y cabecera de la ficha)
+export function InsigniaTienda({ tienda, className }: { tienda: string; className?: string }) {
   return (
-    <span className={cx("inline-flex items-center gap-2", className)}>
-      <MarcaTienda t={p.tienda} />{p.tienda}<span className="whitespace-nowrap text-slate">· {i.cat(p.categoria)}</span>
+    <span className={cx("inline-flex items-center gap-1.5 rounded-lg border border-slate-200/80 bg-card/95 px-2.5 py-1 text-xs font-bold text-slate-800 shadow-2xs", className)}>
+      <MarcaTienda t={tienda} />{tienda}
     </span>
   );
 }
@@ -34,95 +33,112 @@ export function Tienda({ p, className }: { p: Producto; className?: string }) {
 export function Estrellas({ p, className }: { p: Producto; className?: string }) {
   const { t } = useI18n();
   if (!p.valoracion) return null;
-  return <span className={cx("text-caption font-normal text-slate", className)}>{t("card.rating", { r: p.valoracion.toFixed(1), n: (p.resenas || 0).toLocaleString("en-US") })}</span>;
+  return <span className={cx("text-xs text-slate-500", className)}>{t("card.rating", { r: p.valoracion.toFixed(1), n: (p.resenas || 0).toLocaleString("en-US") })}</span>;
 }
 
-// Precio actual y, tachado, el de antes
-export function Precios({ p, className, tam = "text-sub" }: { p: Producto; className?: string; tam?: string }) {
-  return (
-    <div className={cx("flex flex-wrap items-baseline gap-2.5", className)}>
-      <span className={cx("leading-[1.1] font-light tracking-[-0.02em] text-midnight tabular-nums", tam)}>{money.format(p.precio)}</span>
-      {p.descuento > 0 && <span className="text-small font-normal text-slate line-through tabular-nums">{money.format(p.precioAnterior as number)}</span>}
-    </div>
-  );
-}
+// Porcentaje de descuento
+export const Descuento = ({ p, className }: { p: Producto; className?: string }) =>
+  p.descuento > 0 ? <span className={cx("rounded-lg border border-rose-200/70 bg-rose-50 px-2 py-0.5 text-xs font-extrabold text-rose-700 tabular-nums", className)}>-{p.descuento}%</span> : null;
 
 // Botón que lleva a la tienda con el enlace de afiliado
 export function EnlaceCompra({ p, children, className }: { p: Producto; children: ReactNode; className?: string }) {
   return (
     <a className={cx(CTA, className)} href={urlSegura(p.enlace)} target="_blank" rel="sponsored nofollow noopener">
-      {children} <I.Flecha />
+      <span>{children}</span><ExternalLink className="size-3.5" aria-hidden="true" />
     </a>
   );
 }
 
-/* Etiquetas: error de precio, mínimo en 90 días, descuento dudoso, cupón, Prime, verificada, nueva, en tendencia, termina en… */
+/* Etiquetas de la ficha: error de precio, descuento dudoso, cupón, Prime, verificada, nueva, en tendencia, termina en… */
 export function Etiquetas({ p, className }: { p: Producto; className?: string }) {
   const { t } = useI18n();
   const enTendencia = useApp((s) => s.votos.enTendencia.includes(p.id));
   useApp((s) => s.ahora);
   const q = quedan(p, t), an = analisis(p);
   const f: ReactNode[] = [];
-  if (esErrorPrecio(p)) f.push(<span key="err" className={cx(FLAG, FLAG_TIPO.urgente)} title={t("deal.errorTip")}><I.Rayo />{t("deal.error")}</span>);
-  if (an?.minimo) f.push(<span key="min" className={cx(FLAG, FLAG_TIPO.ok)} title={t("hist.minTip")}><I.Check />{t("deal.min90")}</span>);
-  if (an?.dudoso) f.push(<span key="fake" className={cx(FLAG, FLAG_TIPO.aviso)} title={t("hist.fakeTip")}><I.Aviso />{t("deal.fake")}</span>);
-  if (p.cupon) f.push(<span key="cup" className={cx(FLAG, FLAG_TIPO.nueva)}><I.Tijera />{t("deal.coupon")}</span>);
+  const ico = "size-3.5";
+  if (esErrorPrecio(p)) f.push(<span key="err" className={cx(FLAG, FLAG_TIPO.tendencia)} title={t("deal.errorTip")}><Zap className={ico} aria-hidden="true" />{t("deal.error")}</span>);
+  if (an?.dudoso) f.push(<span key="fake" className={cx(FLAG, FLAG_TIPO.aviso)} title={t("hist.fakeTip")}><TriangleAlert className={ico} aria-hidden="true" />{t("deal.fake")}</span>);
+  if (p.cupon) f.push(<span key="cup" className={cx(FLAG, FLAG_TIPO.nueva)}><Scissors className={ico} aria-hidden="true" />{t("deal.coupon")}</span>);
   if (p.prime) f.push(<span key="prime" className={cx(FLAG, FLAG_TIPO.prime)}>Prime</span>);
-  if (p.verificado) f.push(<span key="ver" className={cx(FLAG, FLAG_TIPO.ok)} title={t("deal.verifiedTip")}><I.Check />{t("deal.verified")}</span>);
-  if (esNueva(p)) f.push(<span key="new" className={cx(FLAG, FLAG_TIPO.nueva)}>{t("deal.new")}</span>);
-  if (enTendencia) f.push(<span key="trend" className={cx(FLAG, FLAG_TIPO.tendencia)}><I.Tendencia />{t("deal.trending")}</span>);
-  if (q) f.push(<span key="ends" className={cx(FLAG, q.urgente && FLAG_TIPO.urgente)}><I.Reloj />{q.txt}</span>);
-  return f.length ? <div className={cx("mb-2 flex flex-wrap gap-1.5", className)}>{f}</div> : null;
+  if (p.verificado) f.push(<span key="ver" className={cx(FLAG, FLAG_TIPO.ok)} title={t("deal.verifiedTip")}><BadgeCheck className={ico} aria-hidden="true" />{t("deal.verified")}</span>);
+  if (esNueva(p)) f.push(<span key="new" className={cx(FLAG, FLAG_TIPO.nueva)}><Sparkles className={ico} aria-hidden="true" />{t("deal.new")}</span>);
+  if (enTendencia) f.push(<span key="trend" className={cx(FLAG, FLAG_TIPO.tendencia)}><TrendingUp className={ico} aria-hidden="true" />{t("deal.trending")}</span>);
+  if (q) f.push(<span key="ends" className={cx(FLAG, FLAG_TIPO.urgente)}><Clock className={ico} aria-hidden="true" />{q.txt}</span>);
+  return f.length ? <div className={cx("flex flex-wrap gap-1.5", className)}>{f}</div> : null;
 }
 
-/* Votos de la comunidad: puntuación + «Buena» / «Mala». completo = versión grande de la ficha */
-export function Votos({ p, completo = false }: { p: Producto; completo?: boolean }) {
+/* Votos de la comunidad: flecha arriba, puntuación y flecha abajo. grande = versión de la ficha */
+export function Votos({ p, grande = false }: { p: Producto; grande?: boolean }) {
   const { t } = useI18n();
   const mio = useApp((s) => s.votos.mios[p.id] || 0), n = useApp((s) => s.votos.total[p.id] || 0);
   if (!COMUNIDAD) return null;
-  const btn = cx(
-    "group/v inline-flex min-w-0 items-center justify-center gap-[5px] rounded-box border border-frost bg-paper px-2 py-1.5 text-caption font-normal text-steel transition-[border-color,color,background-color] duration-200 tactil:min-h-10",
-    "[&_svg]:size-4 [&_svg]:transition-transform [&_svg]:duration-200 [&_svg]:ease-brand aria-pressed:[&_svg]:fill-current aria-pressed:[&_svg]:[fill-opacity:.18]",
-    completo ? "flex-[0_1_auto] gap-2 px-4 py-2.5 text-small [&_svg]:size-5" : "flex-1 basis-0 @max-[270px]:[&_svg]:size-[18px]"
-  );
-  const texto = cx(!completo && "max-sm:hidden @max-[270px]:hidden");
-  const caja = (
-    <div className={cx("flex items-stretch", completo ? "gap-2" : "mt-auto mb-3 gap-1.5")} role="group" aria-label={t("vote.score", { n })}>
-      <span className="flex flex-none items-stretch overflow-hidden rounded-box border border-lilac tabular-nums tactil:min-h-10">
-        <small className={cx("grid max-w-[72px] place-items-center bg-wash px-2 text-center text-mini leading-[1.1] font-medium text-indigo", completo ? "px-3 text-caption" : "max-sm:hidden")}>{t("vote.scoreLab")}</small>
-        <b className={cx("grid min-w-10 place-items-center bg-paper px-2 text-body font-medium text-midnight", n > 0 && "text-indigo", n < 0 && "text-steel", completo ? "min-w-14 text-sub font-normal" : "max-sm:min-w-9 max-sm:text-small")}>{conSigno(n)}</b>
-      </span>
-      <button className={cx(btn, "hover:border-lavender hover:text-indigo hover:[&_svg]:-translate-y-px aria-pressed:border-indigo aria-pressed:bg-wash aria-pressed:text-indigo")} type="button" aria-pressed={mio === 1} aria-label={t("vote.up")} title={t("vote.up")} onClick={() => votar(p.id, 1)}>
-        <I.PulgarArriba /><span className={texto}>{t(completo ? "vote.up" : "vote.upShort")}</span>
+  const btn = "rounded-lg p-1.5 transition-colors tactil:p-2.5";
+  return (
+    <div className={cx("inline-flex items-center rounded-xl border", grande ? "border-slate-200 bg-card p-1 shadow-2xs" : "border-slate-200/60 bg-slate-100 p-0.5")}
+      role="group" aria-label={t("d.votes", { n })}>
+      <button type="button" aria-pressed={mio === 1} aria-label={t("d.voteUp")} title={t("d.voteUp")} onClick={() => votar(p.id, 1)}
+        className={cx(btn, mio === 1 ? "bg-emerald-600 text-white" : "text-slate-600 hover:bg-card hover:text-emerald-600")}>
+        <ArrowBigUp className={cx("size-4", mio === 1 && "fill-current")} aria-hidden="true" />
       </button>
-      <button className={cx(btn, "hover:border-slate hover:text-midnight hover:[&_svg]:translate-y-px aria-pressed:border-slate aria-pressed:bg-frost aria-pressed:text-midnight")} type="button" aria-pressed={mio === -1} aria-label={t("vote.down")} title={t("vote.down")} onClick={() => votar(p.id, -1)}>
-        <I.PulgarAbajo /><span className={texto}>{t(completo ? "vote.down" : "vote.downShort")}</span>
+      <span className={cx("px-1.5 text-xs font-extrabold tabular-nums", mio === 1 ? "text-emerald-700" : mio === -1 ? "text-rose-600" : "text-slate-700")}>{n}°</span>
+      <button type="button" aria-pressed={mio === -1} aria-label={t("d.voteDown")} title={t("d.voteDown")} onClick={() => votar(p.id, -1)}
+        className={cx(btn, mio === -1 ? "bg-rose-600 text-white" : "text-slate-600 hover:bg-card hover:text-rose-600")}>
+        <ArrowBigDown className={cx("size-4", mio === -1 && "fill-current")} aria-hidden="true" />
       </button>
     </div>
   );
-  if (!completo) return caja;
+}
+
+/* Votos compactos (tarjeta): 👍 puntuación 👎 */
+export function VotosMini({ p }: { p: Producto }) {
+  const { t } = useI18n();
+  const mio = useApp((s) => s.votos.mios[p.id] || 0), n = useApp((s) => s.votos.total[p.id] || 0);
+  if (!COMUNIDAD) return null;
+  const btn = "latido grid size-8 place-items-center rounded-lg transition-colors tactil:size-11 [&_svg]:size-[18px]";
   return (
-    <section className="flex flex-col gap-3 border-t border-frost pt-4">
-      <h3 className="text-lead font-normal">{t("vote.title")}</h3>{caja}
-    </section>
+    <div className="flex items-center gap-0.5" role="group" aria-label={t("d.votes", { n })}>
+      <button type="button" aria-pressed={mio === 1} aria-label={t("vote.up")} title={t("vote.up")} onClick={() => votar(p.id, 1)}
+        className={cx(btn, mio === 1 ? "bg-emerald-50 text-emerald-700" : "text-slate-600 hover:bg-slate-100 hover:text-emerald-600")}>
+        <ThumbsUp className={cx(mio === 1 && "fill-current/20")} aria-hidden="true" />
+      </button>
+      <span className={cx("min-w-6 text-center text-sm font-semibold tabular-nums", n > 0 ? "text-acento" : n < 0 ? "text-rose-600" : "text-slate-600")}>{conSigno(n)}</span>
+      <button type="button" aria-pressed={mio === -1} aria-label={t("vote.down")} title={t("vote.down")} onClick={() => votar(p.id, -1)}
+        className={cx(btn, mio === -1 ? "bg-rose-50 text-rose-700" : "text-slate-600 hover:bg-slate-100 hover:text-rose-600")}>
+        <ThumbsDown className={cx(mio === -1 && "fill-current/20")} aria-hidden="true" />
+      </button>
+    </div>
   );
 }
 
-/* Corazón (favorito) y campana (seguir el precio). completo = botones con texto de la ficha */
-export function BotonesCuenta({ p, completo = false }: { p: Producto; completo?: boolean }) {
+/* Corazón para guardar en favoritos. grande = botón «Guardar» de la ficha */
+export function Favorito({ p, grande = false }: { p: Producto; grande?: boolean }) {
   const { t } = useI18n();
-  const fav = useApp((s) => s.favoritos.has(p.id)), seg = useApp((s) => s.seguidos.has(p.id));
+  const fav = useApp((s) => s.favoritos.has(p.id));
   if (!COMUNIDAD) return null;
-  const relleno = "aria-pressed:[&_svg]:fill-current aria-pressed:[&_svg]:[fill-opacity:.25]";
-  if (completo) return <>
-    <button className={cx(GHOST, relleno, "[&_svg]:size-[18px]")} type="button" aria-pressed={fav} onClick={() => alternarFavorito(p.id)}><I.Corazon /><span>{t(fav ? "fav.on" : "fav.add")}</span></button>
-    <button className={cx(GHOST, relleno, "[&_svg]:size-[18px]")} type="button" aria-pressed={seg} onClick={() => alternarSeguir(p.id)}><I.Campana /><span>{t(seg ? "follow.on" : "follow.add")}</span></button>
-  </>;
-  const act = cx("grid size-8 place-items-center rounded-box border border-frost bg-paper p-0 text-steel transition-[color,border-color,background-color] duration-200 hover:border-lavender hover:text-indigo aria-pressed:border-lilac aria-pressed:bg-wash aria-pressed:text-indigo max-sm:size-7 tactil:min-h-10 tactil:min-w-10", relleno);
+  const etiqueta = t(fav ? "d.favRemove" : "d.favAdd");
+  const corazon = <Heart className={cx("size-4", fav ? "fill-rose-500 text-rose-500" : grande ? "" : "text-slate-500")} aria-hidden="true" />;
+  if (grande) return (
+    <button type="button" aria-pressed={fav} onClick={() => alternarFavorito(p.id)}
+      className={cx("latido flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition-colors",
+        fav ? "border-rose-200 bg-rose-50 text-rose-700" : "border-slate-200 bg-card text-slate-700 hover:bg-slate-50")}>
+      {corazon}<span>{t(fav ? "d.saved" : "d.save")}</span>
+    </button>
+  );
   return (
-    <div className="absolute right-2.5 bottom-2.5 flex gap-1.5 max-sm:right-1.5 max-sm:bottom-1.5 max-sm:gap-1">
-      <button className={act} type="button" aria-pressed={fav} aria-label={t(fav ? "fav.on" : "fav.add")} title={t(fav ? "fav.on" : "fav.add")} onClick={() => alternarFavorito(p.id)}><I.Corazon /></button>
-      <button className={act} type="button" aria-pressed={seg} aria-label={t(seg ? "follow.on" : "follow.add")} title={t(seg ? "follow.on" : "follow.add")} onClick={() => alternarSeguir(p.id)}><I.Campana /></button>
+    <button type="button" aria-pressed={fav} aria-label={etiqueta} title={etiqueta} onClick={(e) => { e.stopPropagation(); alternarFavorito(p.id); }}
+      className="latido absolute top-3 right-3 flex size-9 items-center justify-center rounded-xl border border-slate-200/70 bg-card/95 shadow-sm transition-transform hover:bg-card active:scale-90 [&:hover_svg]:text-rose-500 tactil:size-11">
+      {corazon}
+    </button>
+  );
+}
+
+// Precio actual, tachado el anterior y el descuento
+export function BloquePrecio({ p, grande = false }: { p: Producto; grande?: boolean }) {
+  return (
+    <div className="flex items-baseline gap-2">
+      <span className={cx("font-extrabold tracking-tight text-slate-900 tabular-nums", grande ? "text-3xl" : "text-2xl")}>{money.format(p.precio)}</span>
+      {p.descuento > 0 && <span className={cx("font-medium text-slate-500 line-through tabular-nums", grande ? "text-sm" : "text-xs sm:text-sm")}>{money.format(p.precioAnterior as number)}</span>}
     </div>
   );
 }

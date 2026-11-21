@@ -8,10 +8,12 @@
     "build": "next build --webpack && node scripts/comprobar-csp.ts",
     "start": "npx serve@14 out",
     "typecheck": "tsc --noEmit",
-    "importar": "node scripts/importar-feed.ts"
+    "importar": "node scripts/importar-feed.ts",
+    "productos-validos": "node scripts/productos-validos.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.118.0",
+    "lucide-react": "1.67.0",
     "next": "16.4.6",
     "react": "19.3.1",
     "react-dom": "19.3.1",

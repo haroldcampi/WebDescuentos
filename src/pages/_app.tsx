@@ -1,16 +1,17 @@
 import type { AppProps } from "next/app";
-import { Inter_Tight } from "next/font/google";
+import { Inter } from "next/font/google";
 import Head from "next/head";
 import Script from "next/script";
 import { useEffect, useState } from "react";
 import { reloj } from "@/lib/catalogo";
 import { ADSENSE } from "@/lib/config";
-import { useI18n } from "@/lib/store";
+import { useApp, useI18n } from "@/lib/store";
+import { AvisoCookies } from "@/components/AvisoCookies";
 import "@/styles/globals.css";
 
 /* Fuente servida desde la propia web (next/font la descarga al compilar): sin peticiones a Google Fonts,
    con display: swap y una fuente de respaldo ajustada al mismo tamaño para que el texto no salte al cambiar */
-const fuente = Inter_Tight({ subsets: ["latin"], weight: ["300", "400", "500"], display: "swap", adjustFontFallback: true, variable: "--font-inter-tight" });
+const fuente = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], display: "swap", adjustFontFallback: true, variable: "--font-inter" });
 
 // Antes del primer render, el reloj del catálogo se pone en la hora con la que se generó el HTML (ver catalogo.ts)
 let relojFijado = false;
@@ -18,22 +19,26 @@ let relojFijado = false;
 /* GOOGLE ADSENSE (tu cuenta): el script (unos 250 KB) no se descarga al abrir la página, sino al primer gesto del visitante
    (desplazar, tocar, pulsar una tecla) o cuando un anuncio ya configurado entra en pantalla. Cada hueco tiene su alto
    reservado (components/Anuncio), así que el anuncio no empuja el contenido al llegar.
-   Los bloques de anuncio se configuran en src/lib/config.ts, bloque ADSENSE. */
+   Los bloques de anuncio se configuran en src/lib/config.ts, bloque ADSENSE.
+   PRIVACIDAD: nada de AdSense hasta que el visitante acepte las cookies de publicidad (components/AvisoCookies). */
 function AdSense() {
   const [cargar, setCargar] = useState(false);
+  const permitido = useApp((s) => s.cookies === true);
   useEffect(() => {
+    if (!permitido) return;
     const ya = () => setCargar(true);
     const gestos = ["scroll", "pointerdown", "touchstart", "keydown"];
     gestos.forEach((g) => addEventListener(g, ya, { once: true, passive: true }));
     const io = "IntersectionObserver" in window ? new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) ya(); }) : null;
     document.querySelectorAll("ins.adsbygoogle").forEach((el) => io?.observe(el));
     return () => { gestos.forEach((g) => removeEventListener(g, ya)); io?.disconnect(); };
-  }, []);
-  return cargar ? <Script id="adsense" src={"https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=" + ADSENSE.cliente} strategy="afterInteractive" crossOrigin="anonymous" /> : null;
+  }, [permitido]);
+  return cargar && permitido ? <Script id="adsense" src={"https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=" + ADSENSE.cliente} strategy="afterInteractive" crossOrigin="anonymous" /> : null;
 }
 
 export default function App({ Component, pageProps }: AppProps) {
-  if (!relojFijado && typeof pageProps.generado === "number") { reloj.ahora = pageProps.generado; relojFijado = true; }
+  // En el servidor se toma en cada petición (en desarrollo el proceso vive días); en el navegador, solo la primera vez
+  if (typeof pageProps.generado === "number" && (typeof window === "undefined" || !relojFijado)) { reloj.ahora = pageProps.generado; relojFijado = true; }
   const { t } = useI18n();
   return <>
     <Head>
@@ -42,6 +47,7 @@ export default function App({ Component, pageProps }: AppProps) {
       <meta name="description" content={t("meta.desc")} />
     </Head>
     <AdSense />
+    <AvisoCookies />
     <div className={fuente.variable + " font-sans"}>
       <Component {...pageProps} />
     </div>

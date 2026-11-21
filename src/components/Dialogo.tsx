@@ -1,5 +1,6 @@
 /* Ventana modal con <dialog> nativo: Esc y clic fuera la cierran (closedby="any").
    Solo donde no existe closedby (Safari), se imita midiendo dónde se pulsa y se suelta: fuera del recuadro. */
+import { X } from "lucide-react";
 import { useEffect, useRef, type KeyboardEvent, type ReactNode, type TouchEvent } from "react";
 import { useI18n } from "@/lib/store";
 import { CERRAR, cx } from "./ui";
@@ -11,13 +12,15 @@ interface Props {
   className?: string;
   // Al cambiar, la ventana vuelve arriba (p. ej. al abrir otra ficha)
   claveScroll?: string | number;
+  // La ventana pone su propio botón de cerrar (la ficha lo lleva en su cabecera)
+  sinCerrar?: boolean;
   onKeyDown?: (e: KeyboardEvent<HTMLDialogElement>) => void;
   onTouchStart?: (e: TouchEvent<HTMLDialogElement>) => void;
   onTouchEnd?: (e: TouchEvent<HTMLDialogElement>) => void;
   children: ReactNode;
 }
 
-export function Dialogo({ abierto, onCerrar, etiqueta, className, claveScroll, children, ...eventos }: Props) {
+export function Dialogo({ abierto, onCerrar, etiqueta, className, claveScroll, sinCerrar, children, ...eventos }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
   const cerrar = useRef(onCerrar);
   cerrar.current = onCerrar;
@@ -46,7 +49,7 @@ export function Dialogo({ abierto, onCerrar, etiqueta, className, claveScroll, c
   return (
     <dialog ref={ref} {...{ closedby: "any" }} aria-label={etiqueta} className={cx(className)} {...eventos}>
       {abierto && <>
-        <button className={CERRAR} type="button" aria-label={t("sheet.close")} onClick={() => ref.current?.close()}>×</button>
+        {!sinCerrar && <button className={CERRAR} type="button" aria-label={t("sheet.close")} onClick={() => ref.current?.close()}><X className="size-5" aria-hidden="true" /></button>}
         {children}
       </>}
     </dialog>

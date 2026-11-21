@@ -31,7 +31,7 @@ export function CompartirOferta() {
   return (
     <Dialogo abierto={abierto} onCerrar={() => { abrirCompartirVentana(false); setMsg({ txt: "", ok: false }); }} etiqueta={t("share.title")} className={DIALOGO_ANCHO.medio}>
       <div className="flex flex-col gap-4 px-9 pt-10 pb-8 max-sm:px-5 max-sm:py-7">
-        <h2 className="pr-11 text-head">{t("share.title")}</h2>
+        <h2 className="pr-11 text-xl font-extrabold text-slate-900">{t("share.title")}</h2>
         <p className="-mt-1.5 text-small font-normal text-steel">{t("share.intro")}</p>
         <form className={FORM} noValidate onSubmit={enviar}>
           <label className={FLD}><span className={FLD_LAB}>{t("share.url")}</span><input className={INPUT} name="url" type="url" required placeholder="https://" autoFocus /></label>
