@@ -21,6 +21,13 @@ export const SUPABASE = {
 };
 export const COMUNIDAD = !!(SUPABASE.url && SUPABASE.clave);
 
+/* CAPTCHA (Cloudflare Turnstile) contra bots en registro, entrada y «olvidé mi contraseña».
+   Vacío = apagado. Para encenderlo:
+   1. Cloudflare > Turnstile > Add widget (dominio de la web) → copia la «Site Key» aquí.
+   2. Supabase > Authentication > Attack Protection > Enable Captcha protection → Turnstile + la «Secret Key».
+   Haz los dos pasos a la vez: con solo el 2, nadie podría entrar; con solo el 1, el captcha no protegería nada. */
+export const CAPTCHA = { turnstile: "" };
+
 // Color de identificación de cada tienda
 export const TIENDAS: Record<string, string> = {
   "Amazon": "#e88a00", "Walmart": "#0071ce", "Target": "#cc0000", "Best Buy": "#0046be",

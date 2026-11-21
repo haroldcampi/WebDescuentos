@@ -9,6 +9,7 @@ import { abrirAcceso, cerrarAcceso, useApp, useI18n, type Acceso as DatosAcceso,
 import { recordarSesion, sb } from "@/lib/supabase";
 import type { ConfigAvatar } from "@/lib/tipos";
 import { Avatar } from "./Avatar";
+import { useCaptcha } from "./Captcha";
 import { Dialogo } from "./Dialogo";
 import { EditorAvatar } from "./EditorAvatar";
 import * as I from "./iconos";
@@ -116,6 +117,7 @@ function Formulario({ a }: { a: DatosAcceso }) {
   const perfil = useApp((s) => s.perfil), cfgGuardado = useApp((s) => s.avatar);
   const [avatar, setAvatar] = useState<ConfigAvatar>(modo === "usuario" && cfgGuardado ? { ...cfgGuardado } : { ...AVA_DEFECTO });
   const form = useRef<HTMLFormElement>(null);
+  const captcha = useCaptcha();
   useEffect(() => { setTimeout(() => form.current?.querySelector<HTMLInputElement>(a.email ? '[name="pass"]' : "input")?.focus(), 50); }, [modo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [titulo, enviar] = TITULOS[modo];
@@ -136,22 +138,24 @@ function Formulario({ a }: { a: DatosAcceso }) {
     if (modo === "crear" && pass !== valor(f, "pass2")) return fallo("auth.err.match");
     if (modo === "crear" && !(f.elements.namedItem("terminos") as HTMLInputElement).checked) return fallo("auth.err.terms");
     if (modo === "entrar") { try { localStorage.setItem("radar-recordar", (f.elements.namedItem("recordar") as HTMLInputElement).checked ? "si" : "no"); } catch {} }
+    const captchaToken = captcha.token();
+    if (captchaToken === "" && ["entrar", "crear", "olvido"].includes(modo)) return fallo("auth.captcha");
     setEnviando(true); setMsg({ txt: t("auth.wait"), ok: false });
     try {
       if ((modo === "crear" || (esPerfil && usuario !== perfil)) && !(await usuarioLibre(usuario))) { fallo("auth.userTaken"); foco(f, "usuario"); return; }
       let error: unknown = null;
-      if (modo === "entrar") ({ error } = await cliente.auth.signInWithPassword({ email, password: pass }));
+      if (modo === "entrar") ({ error } = await cliente.auth.signInWithPassword({ email, password: pass, options: { captchaToken } }));
       else if (modo === "crear") {
         const apellido = valor(f, "apellido").trim();
         const datos = { usuario, avatar: limpiarAvatar(avatar), ...(nombre || apellido ? { nombre, apellido, full_name: [nombre, apellido].filter(Boolean).join(" ") } : {}) };
-        const r = await cliente.auth.signUp({ email, password: pass, options: { data: datos, emailRedirectTo: volverAqui() } });
+        const r = await cliente.auth.signUp({ email, password: pass, options: { data: datos, emailRedirectTo: volverAqui(), captchaToken } });
         // SEGURIDAD: si el email ya tiene cuenta (Supabase devuelve un usuario sin identidades o un error «already registered»),
         // se muestra el MISMO mensaje que en un registro nuevo, para que nadie pueda averiguar qué emails están registrados.
         const yaExiste = (!r.error && r.data?.user && !(r.data.user.identities || []).length) || /already registered|already been registered/i.test(r.error?.message || "");
         if (yaExiste || (!r.error && !r.data.session)) return setMsg({ txt: t("auth.checkEmail", { e: email }), ok: true });
         error = r.error;
       } else if (modo === "olvido") {
-        const r = await cliente.auth.resetPasswordForEmail(email, { redirectTo: volverAqui() + "?recuperar=1" });
+        const r = await cliente.auth.resetPasswordForEmail(email, { redirectTo: volverAqui() + "?recuperar=1", captchaToken });
         if (!r.error) return setMsg({ txt: t("auth.resetSent", { e: email }), ok: true });
         error = r.error;
       } else if (esPerfil) {
@@ -173,7 +177,7 @@ function Formulario({ a }: { a: DatosAcceso }) {
       }
       if (error) throw error;
     } catch (er) { console.error(er); setMsg({ txt: errorAcceso(er), ok: false }); }
-    finally { setEnviando(false); }
+    finally { setEnviando(false); captcha.reiniciar(); }
   }
 
   const recordar = recordarSesion();
@@ -213,6 +217,7 @@ function Formulario({ a }: { a: DatosAcceso }) {
           <p className="-mt-1.5 text-small text-slate">{t("auth.passHint")}</p>
         </>}
         <Msg txt={msg.txt} ok={msg.ok} />
+        {["entrar", "crear", "olvido"].includes(modo) && captcha.nodo}
         <button className={cx(BTN, "mt-0.5 w-full disabled:cursor-wait")} type="submit" disabled={enviando}>{t(enviar)}</button>
       </form>
       {(modo === "entrar" || modo === "crear") && <>
@@ -246,6 +251,7 @@ function Ajustes() {
   const usuario = useApp((s) => s.usuario), perfil = useApp((s) => s.perfil), cfgGuardado = useApp((s) => s.avatar);
   const [avatar, setAvatar] = useState<ConfigAvatar>(cfgGuardado ? { ...cfgGuardado } : { ...AVA_DEFECTO });
   const [msgs, setMsgs] = useState<Record<string, { txt: string; ok?: boolean }>>({});
+  const captcha = useCaptcha();
   const [ocupado, setOcupado] = useState<string | null>(null);
   if (!usuario) return null;
   const decir = (k: string, txt: string, ok = false) => setMsgs((m) => ({ ...m, [k]: { txt, ok } }));
@@ -285,17 +291,19 @@ function Ajustes() {
     if (!passFuerte(nueva)) return decir("pass", t("auth.err.short"));
     if (nueva !== rep) return decir("pass", t("auth.err.match"));
     if (actual && actual === nueva) return decir("pass", t("set.passSame"));
+    const captchaToken = captcha.token();
+    if (conPassword() && captchaToken === "") return decir("pass", t("auth.captcha"));
     setOcupado("pass"); decir("pass", t("auth.wait"));
     try {
       if (conPassword()) {
-        const chk = await cliente.auth.signInWithPassword({ email: usuario!.email as string, password: actual });
+        const chk = await cliente.auth.signInWithPassword({ email: usuario!.email as string, password: actual, options: { captchaToken } });
         if (chk.error) return decir("pass", t("set.passWrong"));
       }
       const { error } = await cliente.auth.updateUser({ password: nueva });
       if (error) return decir("pass", /different|same/i.test(error.message) ? t("set.passSame") : errorAcceso(error));
       f.reset(); decir("pass", t("set.passSaved"), true);
     } catch (er) { console.error(er); decir("pass", t("auth.err.generic")); }
-    finally { setOcupado(null); }
+    finally { setOcupado(null); captcha.reiniciar(); }
   }
 
   const sec = "flex flex-col gap-3 border-t border-frost py-6 first-of-type:border-t-0 first-of-type:pt-3";
@@ -330,6 +338,7 @@ function Ajustes() {
             <Campo lab={t("set.newPass")}><CampoPass name="pass" ph={t("auth.passPh")} auto="new-password" /></Campo>
             <Campo lab={t("auth.confirm")}><CampoPass name="pass2" ph={t("auth.passPh")} auto="new-password" /></Campo>
           </div>
+          {conPassword() && captcha.nodo}
           <Msg txt={msgs.pass?.txt || ""} ok={msgs.pass?.ok} />
           {boton("pass", t("set.passBtn"))}
         </form>

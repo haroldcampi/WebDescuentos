@@ -28,3 +28,7 @@ audits/
 out/
 next-env.d.ts
 *.tsbuildinfo
+
+# Notas y conversaciones de trabajo: no se publican
+chat-completo.md
+resumen.md
