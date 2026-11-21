@@ -167,7 +167,7 @@ function Formulario({ a }: { a: DatosAcceso }) {
       else if (modo === "crear") {
         // «terminos»: la versión aceptada con la casilla; la base de datos la apunta al crear la cuenta (seguridad.aceptaciones)
         const datos = { usuario, avatar: limpiarAvatar(avatar), terminos: LEGAL.version };
-        const r = await cliente.auth.signUp({ email, password: pass, options: { data: datos, emailRedirectTo: volverAqui(), captchaToken } });
+        const r = await cliente.auth.signUp({ email, password: pass, options: { data: datos, emailRedirectTo: volverAqui() + "?confirmado=1", captchaToken } });
         // SEGURIDAD: si el email ya tiene cuenta (Supabase devuelve un usuario sin identidades o un error «already registered»),
         // se muestra el MISMO mensaje que en un registro nuevo, para que nadie pueda averiguar qué emails están registrados.
         const yaExiste = (!r.error && r.data?.user && !(r.data.user.identities || []).length) || /already registered|already been registered/i.test(r.error?.message || "");

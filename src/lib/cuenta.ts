@@ -211,7 +211,7 @@ function conectar(cliente: SupabaseClient) {
   const q = new URLSearchParams(location.search), h = new URLSearchParams(location.hash.replace(/^#/, ""));
   const limpiarDireccion = () => {
     const u = new URL(location.href);
-    ["code", "error", "error_code", "error_description", "recuperar"].forEach((k) => u.searchParams.delete(k));
+    ["code", "error", "error_code", "error_description", "recuperar", "confirmado"].forEach((k) => u.searchParams.delete(k));
     u.hash = ""; history.replaceState(history.state, "", u);
   };
 
@@ -237,7 +237,19 @@ function conectar(cliente: SupabaseClient) {
   /* Al volver del email de confirmación: si el enlace se abrió en otro navegador o en la app del correo,
      Supabase confirma la cuenta pero no puede iniciar la sesión aquí. Entonces avisamos y abrimos «Entrar». */
   const vuelta = { codigo: q.has("code"), recuperar: q.has("recuperar"), error: q.get("error_description") || h.get("error_description") || "" };
-  if ((vuelta.codigo || vuelta.error) && !q.has("popup")) {
+  /* Vuelta del enlace de CONFIRMAR EL REGISTRO (?confirmado=1): no se entra sola. Se cierra la sesión que haya abierto
+     el enlace y se pide entrar con email y contraseña, con el email ya escrito. Así funciona igual aunque el enlace
+     se abra en otro navegador o en la app del correo (ahí la sesión no se puede abrir, pero el email sí queda confirmado). */
+  let vueltaConfirmar = q.has("confirmado") && (vuelta.codigo || !!vuelta.error) && !q.has("popup");
+  if (vueltaConfirmar) {
+    cliente.auth.getSession().then(async ({ data }) => {
+      const email = data?.session?.user?.email;
+      if (data?.session) await cliente.auth.signOut({ scope: "local" }).catch((e) => console.error(e));
+      limpiarDireccion();
+      vueltaConfirmar = false;
+      abrirAcceso("entrar", "", t(vuelta.error ? "auth.linkExpired" : "auth.confirmed"), !vuelta.error, email);
+    }).catch((e) => { vueltaConfirmar = false; console.error(e); });
+  } else if ((vuelta.codigo || vuelta.error) && !q.has("popup")) {
     cliente.auth.getSession().then(({ data }) => {
       limpiarDireccion();
       if (data?.session) return; // la sesión se abrió bien: nada que avisar
@@ -247,6 +259,8 @@ function conectar(cliente: SupabaseClient) {
   }
 
   cliente.auth.onAuthStateChange((evento, sesion) => {
+    // La sesión que abre el enlace de confirmación se cierra enseguida (arriba): no se carga la cuenta ni se cierra la ventana de entrar
+    if (vueltaConfirmar && sesion) return;
     const antes = get().usuario?.id;
     set({ usuario: sesion?.user || null });
     const acceso = get().acceso;
