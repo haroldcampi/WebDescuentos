@@ -1,11 +1,10 @@
 /* Franja del próximo gran evento de rebajas (Black Friday, Cyber Monday…). Se configura en config.ts (EVENTOS). */
+import { Bell, X, Zap } from "lucide-react";
 import { useState } from "react";
 import { DIA, reloj } from "@/lib/catalogo";
 import { COMUNIDAD, EVENTOS } from "@/lib/config";
 import { pedirCuenta } from "@/lib/cuenta";
 import { abrirAlertas, useApp, useI18n } from "@/lib/store";
-import * as I from "./iconos";
-import { GHOST, cx } from "./ui";
 
 /* Va ya en el HTML compilado para que su hueco esté reservado desde la primera pintura (si no, empuja la página al aparecer).
    El primer render cuenta los días en UTC (igual al compilar y en el navegador); tras montar, con la hora local. */
@@ -30,17 +29,20 @@ export function Evento() {
   if (guardado || cerrado === ev.fecha) return null;
   const dias = Math.round((+ev.t - +hoy) / DIA);
   return (
-    <div className="border-b border-lilac bg-wash" id="evento">
-      <div className="wrap flex min-h-[52px] items-center gap-3 py-2 max-sm:flex-wrap max-sm:gap-2">
-        <p className="flex-1 text-small font-normal text-steel max-sm:basis-[calc(100%-44px)]">
-          <b className="font-medium text-indigo">{dias === 0 ? t("event.today", { e: ev.nombre }) : dias === 1 ? t("event.tomorrow", { e: ev.nombre }) : t("event.in", { e: ev.nombre, n: dias })}</b> <span>{t("event.tip")}</span>
+    <div className="bg-gradient-to-r from-indigo-600 to-violet-600 text-white" id="evento">
+      <div className="wrap flex min-h-11 items-center gap-3 py-1.5 text-xs sm:text-sm max-sm:flex-wrap max-sm:gap-2">
+        <p className="flex flex-1 items-center gap-2 max-sm:basis-[calc(100%-44px)]">
+          <Zap className="size-4 shrink-0 text-amber-300" aria-hidden="true" />
+          <span><b className="font-bold">{dias === 0 ? t("event.today", { e: ev.nombre }) : dias === 1 ? t("event.tomorrow", { e: ev.nombre }) : t("event.in", { e: ev.nombre, n: dias })}</b> <span className="text-white/85">{t("event.tip")}</span></span>
         </p>
-        <button className={cx(GHOST, "bg-paper px-3 py-[7px] max-sm:order-3 [&_svg]:size-3.5")} type="button"
+        <button className="inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-white/25 max-sm:order-3 tactil:min-h-10" type="button"
           onClick={() => { if (COMUNIDAD && !usuario) return pedirCuenta("auth.reasonFollow"); abrirAlertas(); }}>
-          <I.Campana />{t("event.cta")}
+          <Bell className="size-3.5" aria-hidden="true" />{t("event.cta")}
         </button>
-        <button className="size-8 flex-none rounded-box border-0 bg-transparent text-xl text-steel hover:bg-paper hover:text-midnight" type="button" aria-label={t("sheet.close")}
-          onClick={() => { try { localStorage.setItem("radar-evento-cerrado", ev.fecha); } catch {} setCerrado(ev.fecha); }}>×</button>
+        <button className="grid size-8 flex-none place-items-center rounded-lg text-white/80 hover:bg-white/15 hover:text-white" type="button" aria-label={t("sheet.close")}
+          onClick={() => { try { localStorage.setItem("radar-evento-cerrado", ev.fecha); } catch {} setCerrado(ev.fecha); }}>
+          <X className="size-4" aria-hidden="true" />
+        </button>
       </div>
     </div>
   );

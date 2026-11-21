@@ -1,26 +1,23 @@
-/* Portada: rebajas más fuertes · anuncio · catálogo con filtros · compartir · cómo elegimos · anuncio · pie.
+/* Portada: cabecera fija con la franja de filtros · aviso del próximo evento · ofertas (o favoritos / alertas) · pie.
    El HTML se genera al compilar (en español); al abrirse en el navegador se aplica el idioma del visitante
    y se pintan los productos (las ofertas caducadas se quitan con la hora del visitante). */
 import dynamic from "next/dynamic";
 import { useEffect, useRef } from "react";
-import { Anuncio } from "@/components/Anuncio";
 import { Cabecera } from "@/components/Cabecera";
 import { Catalogo } from "@/components/Catalogo";
 import { BarraComparar } from "@/components/Comparador";
-import { Destacadas } from "@/components/Destacadas";
 import { Evento } from "@/components/Evento";
-import { CompartirCta, Metodo, Pie } from "@/components/Secciones";
+import { Pie } from "@/components/Secciones";
 import { catalogo, reloj } from "@/lib/catalogo";
 import { iniciarComunidad } from "@/lib/comunidad";
 import { iniciarCuenta } from "@/lib/cuenta";
 import { idiomaInicial } from "@/lib/i18n";
-import { abrirFicha, useApp, useI18n } from "@/lib/store";
+import { abrirFicha, i18nActual, useApp } from "@/lib/store";
 
-/* Las ventanas (ficha con galería, gráfica y comentarios; comparador; alertas; cuenta; compartir) no se ven al abrir la web:
+/* Las ventanas (ficha con gráfica y comentarios; comparador; cuenta; compartir) no se ven al abrir la web:
    su código se descarga la primera vez que se abre cada una, no con la página. */
 const Ficha = dynamic(() => import("@/components/Ficha").then((m) => m.Ficha), { ssr: false });
 const VentanaComparador = dynamic(() => import("@/components/Comparador").then((m) => m.VentanaComparador), { ssr: false });
-const Alertas = dynamic(() => import("@/components/Alertas").then((m) => m.Alertas), { ssr: false });
 const Acceso = dynamic(() => import("@/components/Acceso").then((m) => m.Acceso), { ssr: false });
 const CompartirOferta = dynamic(() => import("@/components/CompartirOferta").then((m) => m.CompartirOferta), { ssr: false });
 
@@ -33,28 +30,14 @@ function useUnaVez(c: boolean) {
 function Ventanas() {
   const ficha = useUnaVez(useApp((s) => !!s.fichaId));
   const comparador = useUnaVez(useApp((s) => s.comparadorAbierto));
-  const alertas = useUnaVez(useApp((s) => s.alertasAbierto));
   const acceso = useUnaVez(useApp((s) => !!s.acceso));
   const compartir = useUnaVez(useApp((s) => s.compartirAbierto));
   return <>
     {ficha && <Ficha />}
     {comparador && <VentanaComparador />}
-    {alertas && <Alertas />}
     {acceso && <Acceso />}
     {compartir && <CompartirOferta />}
   </>;
-}
-
-/* Entrada de cada sección al aparecer en pantalla */
-function entradas() {
-  const els = document.querySelectorAll<HTMLElement>("[data-in]");
-  // Navegadores sin sibling-index(): se numeran los hijos para el retraso escalonado (globals.css)
-  if (!CSS.supports("transition-delay: calc(sibling-index() * 1ms)")) els.forEach((el) => [...el.children].forEach((h, k) => (h as HTMLElement).style.setProperty("--sibling-index", String(k + 1))));
-  const ver = (el: Element) => el.classList.add("in");
-  if (!("IntersectionObserver" in window)) return els.forEach(ver);
-  const io = new IntersectionObserver((ents) => ents.forEach((en) => { if (en.isIntersecting) { ver(en.target); io.unobserve(en.target); } }), { threshold: 0.05 });
-  els.forEach((el) => io.observe(el));
-  setTimeout(() => els.forEach((el) => { if (el.getBoundingClientRect().top < innerHeight) ver(el); }), 2500);
 }
 
 // La hora de la compilación viaja en las props: el primer render del navegador usa la misma que el HTML generado
@@ -63,9 +46,6 @@ export function getStaticProps() {
 }
 
 export default function Inicio() {
-  const { t } = useI18n();
-  const montado = useApp((s) => s.montado);
-
   useEffect(() => {
     const lang = idiomaInicial();
     document.documentElement.lang = lang;
@@ -75,33 +55,25 @@ export default function Inicio() {
     iniciarComunidad();
     iniciarCuenta();
     // Enlace compartido (?producto=id): abre directamente la ficha de ese producto
-    const id = new URLSearchParams(location.search).get("producto");
+    const q = new URLSearchParams(location.search), id = q.get("producto");
+    // Vuelta tras borrar la cuenta: se confirma y se limpia la dirección
+    if (q.get("cuenta") === "borrada") {
+      history.replaceState(history.state, "", location.pathname);
+      setTimeout(() => alert(i18nActual().t("set.deleted")), 300);
+    }
     if (id && catalogo().porId.has(id)) abrirFicha(id);
     /* App instalable (PWA) */
     if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch((e) => console.error(e));
   }, []);
-  useEffect(() => { if (montado) requestAnimationFrame(entradas); }, [montado]);
 
-  return <>
-    <Cabecera />
-    <Evento />
-    <main id="inicio">
-      <h1 className="sr-only">{t("meta.title")}</h1>
-      <Destacadas />
-      <div className="wrap">
-        {/* ANUNCIO 1 · Banner superior */}
-        <Anuncio sitio="superior" texto={t("ad.top")} margen="mt-(--space-pause)" alto="min-h-24" />
-      </div>
+  return (
+    <div className="flex min-h-svh flex-col">
+      <Cabecera />
+      <Evento />
       <Catalogo />
-      <CompartirCta />
-      <Metodo />
-      <div className="wrap">
-        {/* ANUNCIO 4 · Banner inferior */}
-        <Anuncio sitio="inferior" texto={t("ad.foot")} margen="mt-(--space-section)" alto="min-h-24" />
-      </div>
-    </main>
-    <BarraComparar />
-    <Pie />
-    <Ventanas />
-  </>;
+      <BarraComparar />
+      <Pie />
+      <Ventanas />
+    </div>
+  );
 }

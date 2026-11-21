@@ -1,15 +1,15 @@
-/* Estado de toda la web en un solo sitio (zustand): idioma, filtros, comparador, ventanas abiertas,
+/* Estado de toda la web en un solo sitio (zustand): idioma, filtros y vista, ventanas abiertas,
    votos de la comunidad y la cuenta del usuario. Los componentes leen de aquí con useApp(...). */
 import type { User } from "@supabase/supabase-js";
 import { create } from "zustand";
 import { MAX_COMPARAR, POR_TANDA } from "./config";
 import { crearI18n, type Idioma } from "./i18n";
-import type { ConfigAvatar, Filtros } from "./tipos";
+import type { ConfigAvatar, Filtros, Vista } from "./tipos";
 
-export type ModoAcceso = "entrar" | "crear" | "olvido" | "nueva" | "usuario" | "ajustes";
+export type ModoAcceso = "entrar" | "crear" | "olvido" | "nueva" | "usuario" | "terminos" | "ajustes";
 export interface Acceso { modo: ModoAcceso; motivo: string; msg: string; ok: boolean; v: number; email?: string }
 
-export const FILTROS_INICIALES: Filtros = { q: "", categoria: "Todas", tiendas: [], orden: "relevancia", grupo: "ninguno", favoritos: false, min: 0, max: 0 };
+export const FILTROS_INICIALES: Filtros = { q: "", categoria: "Todas", tiendas: [], orden: "destacadas", min90: false, min: 0, max: 0, vista: "catalogo" };
 
 interface Estado {
   montado: boolean;
@@ -22,7 +22,6 @@ interface Estado {
   // Ventanas
   fichaId: string | null;
   comparadorAbierto: boolean;
-  alertasAbierto: boolean;
   compartirAbierto: boolean;
   acceso: Acceso | null;
   // Comunidad: puntuación de cada oferta, votos de las últimas 48 h y los votos de este navegador
@@ -34,7 +33,13 @@ interface Estado {
   favoritos: Set<string>;
   seguidos: Map<string, number>;
   objetivos: Map<string, number>;
+  // Fecha en que se creó cada alerta (ISO)
+  creados: Map<string, string>;
   avataresListos: boolean;
+  // Cookies de publicidad: null = aún sin decidir (se muestra el aviso); true = aceptadas; false = rechazadas o señal GPC
+  cookies: boolean | null;
+  // Panel «Tus opciones de privacidad» abierto desde el pie
+  panelCookies: boolean;
 }
 
 export const useApp = create<Estado>(() => ({
@@ -46,7 +51,6 @@ export const useApp = create<Estado>(() => ({
   comparar: [],
   fichaId: null,
   comparadorAbierto: false,
-  alertasAbierto: false,
   compartirAbierto: false,
   acceso: null,
   votos: { total: {}, recientes: {}, enTendencia: [], mios: {} },
@@ -56,7 +60,10 @@ export const useApp = create<Estado>(() => ({
   favoritos: new Set(),
   seguidos: new Map(),
   objetivos: new Map(),
-  avataresListos: false
+  creados: new Map(),
+  avataresListos: false,
+  cookies: null,
+  panelCookies: false
 }));
 
 const set = useApp.setState, get = useApp.getState;
@@ -77,6 +84,13 @@ export function limpiarFiltros() {
 }
 export const verMas = () => set((s) => ({ visibles: s.visibles + POR_TANDA }));
 
+/* Vistas de la portada: todas las ofertas, favoritos o alertas. Al cambiar de vista, la página vuelve arriba */
+export function irAVista(vista: Vista) {
+  set((s) => ({ filtros: { ...s.filtros, vista }, visibles: POR_TANDA }));
+  if (typeof window !== "undefined") scrollTo({ top: 0, behavior: "smooth" });
+}
+export const abrirAlertas = () => irAVista("alertas");
+
 /* Comparador: hasta 4 productos; el quinto saca al primero */
 export function alternarComparar(id: string) {
   set((s) => {
@@ -86,12 +100,11 @@ export function alternarComparar(id: string) {
   });
 }
 export const vaciarComparar = () => set({ comparar: [] });
+export const abrirComparador = (v = true) => set({ comparadorAbierto: v });
 
 /* Ventanas */
 export const abrirFicha = (id: string) => set({ fichaId: id, comparadorAbierto: false });
 export const cerrarFicha = () => set({ fichaId: null });
-export const abrirComparador = (v = true) => set({ comparadorAbierto: v });
-export const abrirAlertas = (v = true) => set({ alertasAbierto: v });
 export const abrirCompartirVentana = (v = true) => set({ compartirAbierto: v });
 export function abrirAcceso(modo: ModoAcceso, motivo = "", msg = "", ok = false, email?: string) {
   set((s) => ({ acceso: { modo, motivo, msg, ok, email, v: (s.acceso?.v || 0) + 1 } }));

@@ -7,7 +7,7 @@ import { ADSENSE, SUPABASE } from "@/lib/config";
    Si añades un script en línea o de otro dominio, añádelo allí o el navegador lo bloqueará.
    Este script del tema va en línea para que no haya parpadeo: si lo cambias, recalcula su sha256 y cámbialo en vercel.json
    (npm run build lo comprueba: ver scripts/comprobar-csp.ts). */
-export const SCRIPT_TEMA = 'document.documentElement.classList.add("js");try{if(localStorage.getItem("radar-tema")==="oscuro")document.documentElement.dataset.theme="dark";}catch(e){}';
+export const SCRIPT_TEMA = 'document.documentElement.classList.add("js");try{var t=localStorage.getItem("radar-tema");if(t==="oscuro"||(t==="sistema"&&matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.dataset.theme="dark";}catch(e){}';
 
 /* CSS en línea: al compilar, la hoja de estilos (unos 12 KB comprimida) se mete dentro del HTML en vez de pedirse aparte.
    Así el navegador puede pintar en cuanto llega la página, sin esperar otra descarga. Es una web de una sola página,

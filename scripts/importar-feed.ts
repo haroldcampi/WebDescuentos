@@ -13,8 +13,10 @@
   Cada red llama distinto a las columnas. Ajusta el bloque COLUMNAS si hace falta:
   a la izquierda el campo de la web, a la derecha los nombres posibles en el CSV.
 */
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { escribirMigracionProductos } from "./productos-validos.ts";
 
 const raiz = path.join(import.meta.dirname, "..");
 
@@ -66,7 +68,10 @@ function convertir(archivo: string): Fila[] {
     let precio = num(v("precio")), anterior = num(v("precioAnterior"));
     if (anterior !== null && precio !== null && anterior <= precio) anterior = null;
     return {
-      id: `${tiendaPorDefecto}-${n + 1}`.toLowerCase().replace(/[^a-z0-9-]/g, ""),
+      /* Identificador estable: tienda + huella del enlace del producto (antes era el número de fila, y si el feed
+         cambiaba de orden, los votos, comentarios e historial de precios pasaban al producto equivocado).
+         Sin enlace válido la fila se descarta más abajo; el número de fila solo queda como último recurso. */
+      id: `${tiendaPorDefecto.toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 40) || "feed"}-${createHash("sha256").update(v("enlace") || `fila-${n + 1}`).digest("hex").slice(0, 12)}`,
       titulo: v("titulo"),
       tienda: v("tienda") || tiendaPorDefecto,
       categoria: (v("categoria").split(/>|\//).pop() || "Otros").trim(),
@@ -119,3 +124,6 @@ for (const p of todos) {
 fs.writeFileSync(salida, `// Generado por scripts/importar-feed.ts el ${new Date().toISOString()}\nimport type { ProductoBase } from "@/lib/tipos";\n\nexport const PRODUCTOS: ProductoBase[] = [\n${todos.map((p) => "  " + JSON.stringify(p)).join(",\n")}\n];\n`);
 fs.writeFileSync(archivoHistorial, JSON.stringify(Object.fromEntries(todos.map((p) => [p.id, p.historial])), null, 1) + "\n");
 console.log(`Listo: ${todos.length} productos guardados en ${salida}`);
+// La base de datos solo admite votos y comentarios de productos de su lista: se genera la migración que la pone al día
+const migracion = escribirMigracionProductos(todos.map((p) => p.id));
+console.log(`Lista de productos válidos: ${path.relative(raiz, migracion)}. Aplícala con \`supabase db push\` (o pégala en Supabase > SQL Editor).`);

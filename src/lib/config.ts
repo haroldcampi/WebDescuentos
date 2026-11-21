@@ -5,7 +5,8 @@ export const MAX_COMPARAR = 4;
 
 /* GOOGLE ADSENSE
    Crea en AdSense (Anuncios > Por bloque de anuncios) un anuncio «de display» por cada espacio
-   y pega aquí su número data-ad-slot. Mientras esté vacío, ese espacio muestra el recuadro «Publicidad».
+   y pega aquí su número data-ad-slot. Mientras esté vacío, ese espacio no se muestra.
+   «superior» va encima de la lista de ofertas e «inferior» debajo; «lateral» ya no se usa (el diseño no tiene panel lateral).
    Nunca se ponen anuncios dentro de la lista de productos. */
 export const ADSENSE = {
   cliente: "ca-pub-6410047185817436",
@@ -20,6 +21,17 @@ export const SUPABASE = {
   clave: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2em14aHZzbXVocnFpeW12em9lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4MDg3MjAsImV4cCI6MjEwODM4NDcyMH0.Xze2amBDqd954nlg_H9LMX0jnudLA8q_oY5CRsLLn98"
 };
 export const COMUNIDAD = !!(SUPABASE.url && SUPABASE.clave);
+
+/* DATOS LEGALES (páginas de Privacidad, Términos y Cookies). Rellénalos antes de publicar:
+   - titular: tu nombre o el de tu empresa (quien responde de la web)
+   - email: dirección para solicitudes de privacidad y avisos legales (obligatoria en la política de privacidad)
+   - estado: estado de EE. UU. cuya ley rige los Términos (p. ej. "Florida")
+   - version: cámbiala cada vez que modifiques los textos legales (se guarda con la aceptación de cada usuario) */
+export const LEGAL = { titular: "", email: "", estado: "", version: "2026-11-20" };
+
+/* AMAZON: sus normas de afiliados no permiten mostrar precios que no vengan de su API (PA-API) actualizados
+   en las últimas 24 h. Los productos de Amazon con un precio más antiguo se muestran sin precio («Ver precio en Amazon»). */
+export const AMAZON_PRECIO_HORAS = 24;
 
 /* CAPTCHA (Cloudflare Turnstile) contra bots en registro, entrada y «olvidé mi contraseña».
    Vacío = apagado. Para encenderlo:

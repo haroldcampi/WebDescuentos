@@ -60,7 +60,9 @@ npm run importar -- feed-walmart.csv feed-target.csv feed-etsy.csv
 npm run build
 ```
 
-Eso reescribe `src/data/productos.ts` y `npm run build` vuelve a generar la web. Si una red usa nombres de columna distintos, añádelos en el bloque `COLUMNAS` del script. Para tener precios al día, programa esos dos comandos a diario (por ejemplo con un cron, o un GitHub Action que haga commit y deje que Vercel publique).
+Eso reescribe `src/data/productos.ts` y `npm run build` vuelve a generar la web.
+
+**Después de cambiar el catálogo, pon al día la lista de productos de la base de datos.** Supabase solo admite votos y comentarios de productos que estén en su tabla `productos_validos`. El importador genera solo la migración (`supabase/migrations/…_productos_validos.sql`); si editas `src/data/productos.ts` a mano, genérala con `npm run productos-validos`. En los dos casos, aplícala con `supabase db push` o pegándola en Supabase > SQL Editor. Si no lo haces, los productos nuevos no admitirán votos ni comentarios. Si una red usa nombres de columna distintos, añádelos en el bloque `COLUMNAS` del script. Para tener precios al día, programa esos dos comandos a diario (por ejemplo con un cron, o un GitHub Action que haga commit y deje que Vercel publique).
 
 ## Búsqueda
 

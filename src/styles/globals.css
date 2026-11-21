@@ -1,176 +1,206 @@
-/* Radar de Ofertas · dirección "libro de cuentas": lienzo blanco, tinta azul marino, un único índigo para la acción.
-   Tipografía ligera (300), esquinas de 4 px, líneas finas en lugar de sombras.
+/* Radar de Ofertas · diseño «cazador de ofertas»: fondo pizarra claro, tarjetas blancas redondeadas con sombra suave,
+   índigo para la acción, verde para «buena compra», rosa para el descuento y ámbar para las alertas. Tipografía Inter.
    Los estilos están en las clases de Tailwind de cada componente (src/components). Aquí solo:
    los tokens del diseño (@theme), el modo oscuro, los estilos base y las animaciones. */
 @import "tailwindcss";
 
 /* Variantes propias */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
-@custom-variant pantalla-chica {
-  @media (max-width: 1080px) { @slot; }
-  @media (max-height: 560px) { @slot; }
-}
 @custom-variant tactil (@media (pointer: coarse));
 
-/* Tokens del diseño: bg-indigo, text-midnight, border-frost, text-small, rounded-box, ease-brand… */
 @theme static {
-  --color-indigo: #533afd;
-  --color-indigo-hover: #7389ff;
-  --color-accent-hi: #4329e8;
-  --color-midnight: #061b31;
-  --color-slate: #64748d;
-  --color-steel: #50617a;
-  --color-smoke: #839bc8;
-  --color-paper: #ffffff;
-  --color-mist: #f8fafd;
-  --color-frost: #e5edf5;
-  --color-lavender: #b9b9f9;
-  --color-lilac: #d6d9fc;
-  --color-wash: #e8e9ff;
-  --color-deep-violet: #182659;
-  --color-error: #c0123c;
-  --color-warn-ink: #8a4b00;
-  --color-warn-bg: #fff4e0;
-  --color-warn-line: #f2d39b;
+  /* Superficies y acentos que cambian con el modo oscuro */
+  --color-page: #f8fafc;        /* fondo de la página */
+  --color-card: #ffffff;        /* tarjetas, cabecera, ventanas */
+  --color-ink: #0f172a;         /* botones oscuros («Entrar», «Publicar», filtro activo) */
+  --color-on-ink: #ffffff;      /* texto sobre ink */
+  --color-acento: #4f46e5;      /* texto y bordes de acento (índigo) */
 
-  --font-sans: var(--font-inter-tight, "Inter Tight"), "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Nombres que usan las ventanas de cuenta, comentarios y avatar: apuntan a la misma paleta */
+  --color-indigo: #4f46e5;
+  --color-indigo-hover: #6366f1;
+  --color-accent-hi: #4338ca;
+  --color-midnight: #0f172a;
+  --color-slate: #64748b;
+  --color-steel: #475569;
+  --color-smoke: #94a3b8;
+  --color-paper: #ffffff;
+  --color-mist: #f8fafc;
+  --color-frost: #e2e8f0;
+  --color-lavender: #a5b4fc;
+  --color-lilac: #c7d2fe;
+  --color-wash: #eef2ff;
+  --color-deep-violet: #1e1b4b;
+  --color-error: #e11d48;
+  --color-warn-ink: #92400e;
+  --color-warn-bg: #fffbeb;
+  --color-warn-line: #fcd34d;
+
+  --font-sans: var(--font-inter, "Inter"), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  --text-caption: 0.75rem;                                   /* 12 */
-  --text-small: 0.875rem;                                    /* 14 */
-  --text-body: 1rem;                                         /* 16 */
-  --text-lead: clamp(1.125rem, 1rem + 0.5vw, 1.375rem);      /* 18–22 */
-  --text-sub: clamp(1.25rem, 1.1rem + 0.6vw, 1.625rem);      /* 20–26 */
-  --text-head: clamp(2rem, 1.4rem + 2vw, 3rem);              /* 32–48 */
-  --text-display: clamp(2.5rem, 1.6rem + 3.6vw, 3.5rem);     /* 40–56 */
-  --text-mini: 0.6875rem;                                    /* 11 */
+  --text-caption: 0.75rem;   /* 12 */
+  --text-small: 0.875rem;    /* 14 */
+  --text-body: 1rem;         /* 16 */
+  --text-lead: 1.0625rem;    /* 17 */
+  --text-sub: 1.125rem;      /* 18 */
+  --text-head: 1.375rem;     /* 22 */
+  --text-mini: 0.6875rem;    /* 11 */
 
-  --radius-box: 4px;
-  --ease-brand: cubic-bezier(0.22, 1, 0.36, 1);
-  --tracking-label: 0.06em;
+  --radius-box: 0.75rem;     /* 12 px, como rounded-xl */
+  --ease-brand: cubic-bezier(0.16, 1, 0.3, 1);
+  /* Ease-out con un pequeño rebote al final (follow-through): se pasa un pelo y vuelve */
+  --ease-rebote: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --tracking-label: 0.05em;
 
-  --breakpoint-xxs: 22.5rem;   /* 360 */
-  --breakpoint-xs: 30rem;      /* 480 */
-  --breakpoint-tab: 67.5rem;   /* 1080 */
+  --breakpoint-xs: 30rem;    /* 480 */
 
-  --animate-subir: subir .35s var(--ease-brand);
-  --animate-entrar: entrar .35s var(--ease-brand);
-  --animate-aparecer: aparecer .5s var(--ease-brand);
-  --animate-cambio: cambio .45s var(--ease-brand);
   --animate-pop: ava-pop .18s var(--ease-brand);
   --animate-gira: logo-gira .8s linear infinite;
+  --animate-ventana: ventana .22s var(--ease-rebote);
+  --animate-subir: subir .28s var(--ease-brand);
+  /* Contraseña incorrecta: el campo tiembla */
+  --animate-sacudir: sacudir .28s ease-out;
+  /* Tarjetas nuevas de «Ver más»: entran una tras otra (stagger, con animation-delay) */
+  --animate-entrar: entrar .26s var(--ease-brand) both;
 }
 
-/* Modo oscuro: mismos papeles, tonos invertidos. El índigo se aclara para leerse sobre fondo oscuro */
+/* Modo oscuro: la misma paleta en versión oscura. Se redefinen la escala pizarra y los tonos claros de los acentos,
+   así las clases del diseño (bg-slate-100, text-slate-600, bg-emerald-50, text-rose-600…) se adaptan solas. */
 :root[data-theme="dark"] {
-  --color-indigo: #7464ff;
-  --color-indigo-hover: #9a8cff;
-  --color-accent-hi: #8676ff;
-  --color-midnight: #e6edf7;
-  --color-slate: #94a3bb;
-  --color-steel: #b1bdd0;
-  --color-smoke: #7d8fb3;
-  --color-paper: #0a1628;
-  --color-mist: #0f1e35;
-  --color-frost: #1f304b;
-  --color-lavender: #4b4fb0;
-  --color-lilac: #353a85;
-  --color-wash: #1c1f55;
-  --color-deep-violet: #2b3a7a;
-  --color-error: #ff7a8e;
-  --color-warn-ink: #ffc56b;
-  --color-warn-bg: #2b2112;
+  --color-page: #0b1220;
+  --color-card: #131c2e;
+  --color-ink: #e2e8f0;
+  --color-on-ink: #0f172a;
+  --color-acento: #a5b4fc;
+
+  --color-slate-50: #0f172a;
+  --color-slate-100: #1e293b;
+  --color-slate-200: #2b3850;
+  --color-slate-300: #3d4b63;
+  --color-slate-400: #8a99b3;
+  --color-slate-500: #a3b1c6;
+  --color-slate-600: #c3cedd;
+  --color-slate-700: #d5dde8;
+  --color-slate-800: #e5ebf3;
+  --color-slate-900: #f1f5f9;
+
+  --color-indigo-50: #1e1f4b;
+  --color-indigo-100: #272a63;
+  --color-indigo-200: #35398a;
+  --color-indigo-300: #4549a8;
+  --color-indigo-700: #c7d2fe;
+  --color-indigo-800: #e0e7ff;
+  --color-emerald-50: #0d2a22;
+  --color-emerald-100: #11392d;
+  --color-emerald-200: #17513f;
+  --color-emerald-700: #6ee7b7;
+  --color-emerald-800: #a7f3d0;
+  --color-rose-50: #3a1420;
+  --color-rose-100: #4c1a2a;
+  --color-rose-200: #6b2238;
+  --color-rose-700: #fda4af;
+  --color-amber-50: #2b2111;
+  --color-amber-100: #3b2c12;
+  --color-amber-200: #5c4420;
+  --color-amber-300: #7a5a26;
+  --color-amber-700: #fcd34d;
+  --color-amber-800: #fde68a;
+
+  --color-indigo: #6366f1;
+  --color-indigo-hover: #818cf8;
+  --color-accent-hi: #818cf8;
+  --color-midnight: #f1f5f9;
+  --color-slate: #a3b1c6;
+  --color-steel: #c3cedd;
+  --color-smoke: #8a99b3;
+  --color-paper: #131c2e;
+  --color-mist: #0f172a;
+  --color-frost: #2b3850;
+  --color-lavender: #4549a8;
+  --color-lilac: #35398a;
+  --color-wash: #1e1f4b;
+  --color-deep-violet: #312e81;
+  --color-error: #fb7185;
+  --color-warn-ink: #fcd34d;
+  --color-warn-bg: #2b2111;
   --color-warn-line: #5c4420;
   color-scheme: dark;
 }
 
-/* Medidas de la página (no son clases: las usan las clases con mt-(--space-section), etc.) */
-:root {
-  --m: clamp(16px, 3vw, 40px);
-  --head-h: 76px;
-  --space-section: clamp(64px, 7vw, 96px);
-  --space-pause: clamp(40px, 4vw, 56px);
-  color-scheme: light;
-}
-@media (max-width: 640px) { :root { --head-h: 116px; } }
+:root { color-scheme: light; }
 
-/* Contenedor centrado de 1320 px con margen lateral (respeta la muesca del móvil) */
+/* Contenedor centrado (máx. 1600px, así en monitores de 27" no se estira), con márgenes laterales (px-4 / sm:px-6 / lg:px-8) */
 @utility wrap {
   margin-inline: auto;
-  max-width: 1320px;
-  padding-left: max(var(--m), env(safe-area-inset-left, 0px));
-  padding-right: max(var(--m), env(safe-area-inset-right, 0px));
+  width: 100%;
+  max-width: 100rem;
+  padding-left: max(1rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1rem, env(safe-area-inset-right, 0px));
+  @media (width >= 40rem) { padding-left: 1.5rem; padding-right: 1.5rem; }
+  @media (width >= 64rem) { padding-left: 2rem; padding-right: 2rem; }
 }
-/* Líneas en SVG que no engordan al estirar la gráfica */
-@utility trazo-fijo { vector-effect: non-scaling-stroke; }
+/* Franja horizontal desplazable sin barra visible (filtros) */
+@utility sin-barra {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar { display: none; }
+}
 
 @layer base {
   [hidden] { display: none !important; }
-  html { scroll-behavior: smooth; scroll-padding-top: calc(var(--head-h) + 16px); }
+  html { scroll-behavior: smooth; scroll-padding-top: 9rem; }
   body {
-    background: var(--color-paper); color: var(--color-midnight);
-    font-size: var(--text-body); font-weight: 300; line-height: 1.5; letter-spacing: -0.01em;
-    font-feature-settings: "ss01" on, "tnum" on;
+    background: var(--color-page); color: var(--color-slate-900);
+    font-size: var(--text-body); font-weight: 400; line-height: 1.5;
     -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
   }
-  button, input, select, textarea { letter-spacing: inherit; }
   button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
   svg { flex: none; }
-  :focus-visible { outline: 2px solid var(--color-indigo); outline-offset: 2px; }
-  ::selection { background: var(--color-wash); color: var(--color-midnight); }
-  h1, h2, h3 { font-weight: 300; color: var(--color-midnight); text-wrap: balance; overflow-wrap: break-word; }
-  h1 { letter-spacing: -0.025em; line-height: 1.03; }
-  h2 { letter-spacing: -0.02em; line-height: 1.08; }
-  h3 { letter-spacing: -0.01em; line-height: 1.15; }
+  :focus-visible { outline: 2px solid var(--color-indigo-500); outline-offset: 2px; }
+  ::selection { background: var(--color-indigo-100); color: var(--color-slate-900); }
+  h1, h2, h3 { color: var(--color-slate-900); text-wrap: balance; overflow-wrap: break-word; }
   p { text-wrap: pretty; }
-  input::placeholder, textarea::placeholder { color: var(--color-slate); }
+  input::placeholder, textarea::placeholder { color: var(--color-slate-400); }
 
-  /* Ventanas (ficha, comparador, acceso…): <dialog> nativo */
+  /* Ventanas (ficha, cuenta, compartir): <dialog> nativo con el aspecto de las ventanas del diseño */
+  /* Centrada en la pantalla siempre (fixed + inset 0 + margin auto), sin depender de los estilos de cada navegador */
   dialog {
-    margin: auto; border: 1px solid var(--color-frost); border-radius: var(--radius-box); padding: 0;
-    background: var(--color-paper); color: var(--color-midnight);
-    width: min(1080px, 100% - 32px); max-height: calc(100svh - 32px);
+    position: fixed; inset: 0; height: fit-content; max-width: calc(100% - 1.5rem);
+    margin: auto; padding: 0; border: 1px solid var(--color-slate-200); border-radius: 1rem;
+    background: var(--color-card); color: var(--color-slate-900);
+    width: min(56rem, 100% - 1.5rem); max-height: 92svh;
+    box-shadow: 0 25px 50px -12px rgb(15 23 42 / 0.25);
   }
-  dialog[open] { animation: entrar .35s var(--ease-brand); }
-  /* Que desplazarse dentro del diálogo o sobre el fondo no mueva la página de detrás */
+  dialog[open] { animation: var(--animate-ventana); }
   dialog:modal { overscroll-behavior: contain; }
-  dialog::backdrop { background: rgba(6, 27, 49, .45); overflow: hidden; overscroll-behavior: contain; }
-  :root[data-theme="dark"] dialog::backdrop { background: rgba(0, 0, 0, .6); }
-  /* Móvil: las ventanas ocupan toda la pantalla, como una vista propia */
-  @media (max-width: 640px) {
-    dialog { width: 100% !important; max-width: 100%; height: 100svh; max-height: 100svh; margin: 0; border: 0; border-radius: 0; padding-bottom: env(safe-area-inset-bottom, 0px); }
-    dialog[open] { animation-name: subir; }
-  }
+  dialog::backdrop { background: rgb(15 23 42 / 0.6); backdrop-filter: blur(2px); overflow: hidden; overscroll-behavior: contain; }
 }
 
-/* Movimiento: cada sección entra por partes al aparecer en pantalla ([data-in] + clase .in, ver components/Entradas) */
-@media (prefers-reduced-motion: no-preference) {
-  .js [data-in] > *, .js [data-in][data-paso] { opacity: 0; transform: translateY(16px); transition: opacity .7s var(--ease-brand), transform .7s var(--ease-brand); }
-  /* Entrada escalonada: cada hijo 80 ms después del anterior, hasta 320 ms (la 1.ª línea es para navegadores sin sibling-index()) */
-  .js [data-in] > * { transition-delay: min(calc((var(--sibling-index, 1) - 1) * 80ms), 320ms); transition-delay: min(calc((sibling-index() - 1) * 80ms), 320ms); }
-  .js [data-in].in > *, .js [data-in][data-paso].in { opacity: 1; transform: none; }
-  .js [data-paso][data-in] > * { opacity: 1; transform: none; }
-}
-
-/* Entrada de la portada sin esperar al JavaScript: empieza en la primera pintura (no retrasa el LCP) */
-@media (prefers-reduced-motion: no-preference) {
-  .entra > * { animation: aparecer .7s var(--ease-brand) both; }
-  .entra > :nth-child(2) { animation-delay: 80ms; }
-  .entra > :nth-child(3) { animation-delay: 160ms; }
-  .entra > :nth-child(n+4) { animation-delay: 240ms; }
-}
-
-@keyframes cambio { from { transform: translateY(8px); } }
 @keyframes subir { from { transform: translateY(100%); } }
-@keyframes entrar { from { opacity: 0; transform: translateY(16px); } }
-@keyframes aparecer { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes sacudir { 20% { transform: translateX(-6px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
+@keyframes entrar { from { opacity: 0; transform: translateY(10px); } }
+/* Squash & stretch + follow-through: se aplasta, se estira y se asienta con un pequeño rebote */
+@keyframes latido {
+  0% { transform: scale(1); }
+  25% { transform: scale(1.25, 0.8); }
+  50% { transform: scale(0.88, 1.15); }
+  75% { transform: scale(1.06, 0.96); }
+  100% { transform: scale(1); }
+}
+
+/* Microinteracción de los botones de activar (favorito, alerta, votos): el icono «late» al encenderse */
+@utility latido {
+  &[aria-pressed="true"] svg { animation: latido .28s ease-out; }
+}
+
+/* Quien pide menos movimiento en su sistema no ve animaciones ni transiciones */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; animation-delay: 0s !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
+@keyframes ventana { from { opacity: 0; transform: scale(0.97) translateY(6px); } }
 @keyframes ava-pop { from { opacity: 0; transform: translateY(-4px); } }
 @keyframes logo-gira { to { transform: rotate(-360deg); } }
-
-/* Pasos numerados de «Cómo elegimos» (01, 02…) */
-.pasos { counter-reset: paso; }
-.pasos > [data-paso] { counter-increment: paso; }
-.pasos > [data-paso]::before { content: counter(paso, decimal-leading-zero); font-size: var(--text-caption); font-weight: 400; letter-spacing: var(--tracking-label); color: var(--color-indigo); }
 
 /* Anuncio de AdSense ya colocado */
 .adsbygoogle { display: block; }

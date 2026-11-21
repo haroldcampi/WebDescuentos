@@ -1,6 +1,7 @@
 /* Lógica del catálogo sin pantalla: prepara los productos, calcula descuentos, urgencia, historial de precios,
    filtra, ordena y agrupa. La usan los componentes de src/components. */
 import { PRODUCTOS } from "@/data/productos";
+import { AMAZON_PRECIO_HORAS } from "./config";
 import { catEn, type I18n, type T } from "./i18n";
 import { ICO } from "./iconos-cat";
 import type { Filtros, Producto, ProductoBase } from "./tipos";
@@ -59,10 +60,20 @@ function imagenesProvisionales(p: ProductoBase) {
   });
 }
 
+// Amazon: el precio solo se enseña si se comprobó hace menos de AMAZON_PRECIO_HORAS (fecha sola = a las 00:00 UTC de ese día)
+export function precioCaducado(p: ProductoBase) {
+  if (normalizar(p.tienda) !== "amazon") return false;
+  const t = Date.parse(p.actualizado ? (p.actualizado.length === 10 ? p.actualizado + "T00:00:00Z" : p.actualizado) : "");
+  return !isFinite(t) || reloj.ahora - t > AMAZON_PRECIO_HORAS * 36e5;
+}
+
 function preparar(p: ProductoBase): Producto {
-  const descuento = p.precioAnterior && p.precioAnterior > p.precio ? Math.round((1 - p.precio / p.precioAnterior) * 100) : 0;
+  const sinPrecio = precioCaducado(p);
+  const descuento = !sinPrecio && p.precioAnterior && p.precioAnterior > p.precio ? Math.round((1 - p.precio / p.precioAnterior) * 100) : 0;
   const r = {
     ...p,
+    ...(sinPrecio ? { historial: [], errorPrecio: false, precioAnterior: undefined } : {}),
+    sinPrecio,
     descuento,
     ahorro: descuento ? (p.precioAnterior as number) - p.precio : 0,
     _texto: normalizar([p.titulo, p.tituloEn || "", p.tienda, p.categoria, catEn(p.categoria)].join(" "))
@@ -102,69 +113,42 @@ export function analisis(p: Producto) {
 }
 export const esErrorPrecio = (p: Producto) => !!p.errorPrecio || p.descuento >= 70;
 
-/* Ordenar y agrupar (menús «Ordenado por» y «Agrupado por» del catálogo) */
-export const ORDENES = ["relevancia", "tendencias", "recientes", "popularidad", "descuento", "ahorro", "precio-asc", "precio-desc", "valoracion"] as const;
-export const GRUPOS = ["ninguno", "tipo", "categoria", "tienda", "marca"] as const;
-const TIPOS = ["flash", "gran", "rebaja", "normal"];
-const fechaDe = (p: Producto) => p.publicado || p.actualizado || "";
-// Tipo de oferta: el campo «tipo» si existe; si no, se deduce del producto
-const tipoDe = (p: Producto) => (p.tipo ? "x:" + p.tipo : finDe(p) ? "flash" : p.descuento >= 40 ? "gran" : p.descuento > 0 ? "rebaja" : "normal");
-export function claveGrupo(grupo: Filtros["grupo"], p: Producto) {
-  if (grupo === "tipo") return tipoDe(p);
-  if (grupo === "categoria") return p.categoria;
-  if (grupo === "tienda") return p.tienda;
-  if (grupo === "marca") return p.marca || "";
-  return "";
-}
-export function nombreGrupo(grupo: Filtros["grupo"], k: string, i: I18n) {
-  if (grupo === "tipo") return k.startsWith("x:") ? k.slice(2) : i.t("tipo." + k);
-  if (grupo === "categoria") return i.cat(k);
-  if (grupo === "marca") return k || i.t("marca.otras");
-  return k;
-}
+/* Orden del catálogo (desplegable de la franja de filtros) */
+export const ORDENES = ["destacadas", "popularidad", "descuento", "precio-asc", "min90"] as const;
 
 export interface DatosComunidad { total: Record<string, number>; recientes: Record<string, number> }
 // Popularidad: votos de la comunidad y, a igualdad, reseñas y nota en la tienda
 const popularidad = (p: Producto, c: DatosComunidad) => (c.total[p.id] || 0) * 1000 + Math.log10((p.resenas || 0) + 1) * (p.valoracion || 3);
-// Tendencia: votos de las últimas 48 h, novedad, urgencia y descuento
-const tendencia = (p: Producto, c: DatosComunidad, t: T) => (c.recientes[p.id] || 0) * 3 + (c.total[p.id] || 0) + (esNueva(p) ? 4 : 0) + (quedan(p, t)?.urgente ? 2 : 0) + p.descuento / 10 + Math.log10((p.resenas || 0) + 1) / 2;
+/* Destacadas (orden por defecto): mínimo de 90 días, descuento y valoración en la tienda. No depende de los votos,
+   que llegan después de abrir la página: así el orden del HTML generado no cambia al cargar (sin saltos). */
+const destacada = (p: Producto) => (esMinimo90(p) ? 40 : 0) + p.descuento + Math.log10((p.resenas || 0) + 1) * (p.valoracion || 3);
+// ¿Está hoy en su precio más bajo de los últimos 90 días?
+export const esMinimo90 = (p: Producto) => !!analisis(p)?.minimo;
 
-/* Filtros, orden y grupos. Devuelve la lista y cuántas ofertas tiene cada grupo */
-export function filtrar(f: Filtros, favoritos: Set<string>, c: DatosComunidad, i: I18n) {
+/* Filtros y orden */
+export function filtrar(f: Filtros, favoritos: Set<string>, c: DatosComunidad) {
   const palabras = normalizar(f.q).split(/\s+/).filter(Boolean);
   const tiendas = new Set(f.tiendas);
   let lista = catalogo().lista.filter((p) =>
     (f.categoria === "Todas" || p.categoria === f.categoria) &&
     (tiendas.size === 0 || tiendas.has(p.tienda)) &&
-    (!f.max || p.precio <= f.max) &&
-    (!f.min || p.precio >= f.min) &&
-    (!f.favoritos || favoritos.has(p.id)) &&
+    (!f.min90 || esMinimo90(p)) &&
+    (!(f.min || f.max) || !p.sinPrecio) && (!f.min || p.precio >= f.min) && (!f.max || p.precio <= f.max) &&
+    (f.vista !== "favoritos" || favoritos.has(p.id)) &&
     palabras.every((w) => p._texto.includes(w))
   );
-  const ord: Partial<Record<Filtros["orden"], (a: Producto, b: Producto) => number>> = {
-    "precio-asc": (a, b) => a.precio - b.precio,
-    "precio-desc": (a, b) => b.precio - a.precio,
-    "descuento": (a, b) => b.descuento - a.descuento,
-    "ahorro": (a, b) => b.ahorro - a.ahorro,
-    "valoracion": (a, b) => (b.valoracion || 0) - (a.valoracion || 0),
-    "recientes": (a, b) => fechaDe(b).localeCompare(fechaDe(a)) || b.descuento - a.descuento,
+  const ord: Record<Filtros["orden"], (a: Producto, b: Producto) => number> = {
+    "destacadas": (a, b) => destacada(b) - destacada(a),
     "popularidad": (a, b) => popularidad(b, c) - popularidad(a, c),
-    "tendencias": (a, b) => tendencia(b, c, i.t) - tendencia(a, c, i.t)
+    "descuento": (a, b) => b.descuento - a.descuento,
+    "precio-asc": (a, b) => Number(a.sinPrecio) - Number(b.sinPrecio) || a.precio - b.precio,
+    "min90": (a, b) => Number(esMinimo90(b)) - Number(esMinimo90(a)) || b.descuento - a.descuento
   };
-  const fn = ord[f.orden];
-  if (fn) lista = lista.slice().sort(fn);
-  const cuentaGrupos = new Map<string, number>();
-  if (f.grupo !== "ninguno") {
-    // Grupos: los tipos en orden fijo; el resto, de más a menos ofertas («Otras marcas» al final)
-    lista.forEach((p) => { const k = claveGrupo(f.grupo, p); cuentaGrupos.set(k, (cuentaGrupos.get(k) || 0) + 1); });
-    const rango = (k: string) => f.grupo === "tipo" ? (k.startsWith("x:") ? 2.5 : TIPOS.indexOf(k)) : k === "" ? Infinity : -(cuentaGrupos.get(k) || 0);
-    const orden = [...cuentaGrupos.keys()].sort((a, b) => rango(a) - rango(b) || nombreGrupo(f.grupo, a, i).localeCompare(nombreGrupo(f.grupo, b, i), i.lang));
-    const pos = new Map(orden.map((k, n) => [k, n]));
-    // sort estable: respeta el orden elegido dentro de cada grupo
-    lista = lista.slice().sort((a, b) => (pos.get(claveGrupo(f.grupo, a)) ?? 0) - (pos.get(claveGrupo(f.grupo, b)) ?? 0));
-  }
-  return { lista, cuentaGrupos };
+  return lista.slice().sort(ord[f.orden] || ord.destacadas);
 }
+
+// Tope de la barra de precio: el producto más caro, redondeado hacia arriba a decenas
+export const precioMaximo = () => Math.ceil(Math.max(...catalogo().lista.filter((p) => !p.sinPrecio).map((p) => p.precio), 10) / 10) * 10;
 
 export function contar(campo: "categoria" | "tienda") {
   const m = new Map<string, number>();
@@ -173,6 +157,3 @@ export function contar(campo: "categoria" | "tienda") {
 }
 // Categorías ordenadas por su nombre en el idioma actual
 export const categoriasOrdenadas = (i: I18n) => contar("categoria").sort((a, b) => i.cat(a[0]).localeCompare(i.cat(b[0]), i.lang));
-// Las más rebajadas primero; a igualdad, la mejor valorada
-export const porDescuento = () => catalogo().lista.slice().sort((a, b) => b.descuento - a.descuento || (b.valoracion || 0) - (a.valoracion || 0));
-export const precioMaximo = () => Math.ceil(Math.max(...catalogo().lista.map((p) => p.precio), 10) / 10) * 10;

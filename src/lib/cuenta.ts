@@ -4,7 +4,7 @@ import type { AuthError, SupabaseClient, User } from "@supabase/supabase-js";
 import { limpiarAvatar } from "./avatar";
 import { catalogo } from "./catalogo";
 import { abrirAcceso, abrirAlertas, cerrarAcceso, i18nActual, useApp, type ModoAcceso } from "./store";
-import { COMUNIDAD } from "./config";
+import { COMUNIDAD, LEGAL } from "./config";
 import { cargarSb, haySesionGuardada, sb } from "./supabase";
 
 const set = useApp.setState, get = useApp.getState;
@@ -35,22 +35,62 @@ let perfilPreguntado = false;
 async function cargarCuenta() {
   const cliente = sb(); if (!cliente) return;
   const usuario = get().usuario;
-  const favoritos = new Set<string>(), seguidos = new Map<string, number>(), objetivos = new Map<string, number>();
+  const favoritos = new Set<string>(), seguidos = new Map<string, number>(), objetivos = new Map<string, number>(), creados = new Map<string, string>();
   let perfil: string | null = null, avatar = null;
   if (usuario) {
-    const [f, sg, pf] = await Promise.all([
+    const [f, sg, pf, ac] = await Promise.all([
       cliente.from("favoritos").select("producto_id"),
-      cliente.from("seguidos").select("producto_id,precio_visto,precio_objetivo"),
-      cliente.from("perfiles").select("usuario,avatar").eq("id", usuario.id).maybeSingle()
+      cliente.from("seguidos").select("producto_id,precio_visto,precio_objetivo,creado"),
+      cliente.from("perfiles").select("usuario,avatar").eq("id", usuario.id).maybeSingle(),
+      cliente.rpc("version_aceptada")
     ]);
+    // Sin aceptar la versión vigente de los Términos (cuenta de Google, o textos actualizados): se pide antes de seguir
+    if (!ac.error && ac.data !== LEGAL.version) faltaAceptar = true;
     perfil = pf.data?.usuario || null;
     avatar = pf.data?.avatar ? limpiarAvatar(pf.data.avatar) : null;
     (f.data || []).forEach((r) => favoritos.add(r.producto_id));
-    (sg.data || []).forEach((r) => { seguidos.set(r.producto_id, Number(r.precio_visto)); if (r.precio_objetivo) objetivos.set(r.producto_id, Number(r.precio_objetivo)); });
+    (sg.data || []).forEach((r) => { seguidos.set(r.producto_id, Number(r.precio_visto)); if (r.precio_objetivo) objetivos.set(r.producto_id, Number(r.precio_objetivo)); if (r.creado) creados.set(r.producto_id, r.creado); });
   }
-  set({ favoritos, seguidos, objetivos, perfil, avatar });
+  set({ favoritos, seguidos, objetivos, creados, perfil, avatar });
   // Quien entra sin nombre de usuario (Google o cuentas antiguas) lo elige ahora
   if (usuario && !perfil && !perfilPreguntado && !get().acceso) { perfilPreguntado = true; abrirAcceso("usuario"); }
+  else if (usuario && faltaAceptar && !get().acceso) abrirAcceso("terminos");
+}
+let faltaAceptar = false;
+
+/* ===== Privacidad: aceptar los Términos, descargar los datos y borrar la cuenta ===== */
+export async function aceptarTerminos(): Promise<boolean> {
+  const { data, error } = await sb()!.rpc("aceptar_terminos", { p_version: LEGAL.version });
+  if (error || data !== "ok") { console.error(error || data); return false; }
+  faltaAceptar = false;
+  return true;
+}
+
+// Descarga un JSON con todo lo que guarda la base de datos de la cuenta, más lo guardado en este navegador
+export async function descargarMisDatos(): Promise<boolean> {
+  const { data, error } = await sb()!.rpc("mis_datos");
+  if (error || !data) { console.error(error); return false; }
+  const navegador: Record<string, string | null> = {};
+  try { Object.keys(localStorage).filter((k) => k.startsWith("radar-")).forEach((k) => { navegador[k] = localStorage.getItem(k); }); } catch {}
+  const blob = new Blob([JSON.stringify({ ...data, este_navegador: navegador }, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = "mis-datos-radar-de-ofertas.json";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  return true;
+}
+
+// Borra la cuenta y todo lo suyo (en cascada, en la base de datos); después limpia este navegador y recarga
+export async function borrarMiCuenta(): Promise<string> {
+  const { data, error } = await sb()!.rpc("borrar_mi_cuenta");
+  if (error) { console.error(error); return "error"; }
+  if (data !== "ok") return String(data);
+  await sb()!.auth.signOut({ scope: "local" }).catch(() => {});
+  try {
+    [localStorage, sessionStorage].forEach((s) => Object.keys(s).filter((k) => /^sb-|^radar-(mis-votos|recordar)$/.test(k)).forEach((k) => s.removeItem(k)));
+  } catch {}
+  location.replace(location.pathname + "?cuenta=borrada");
+  return "ok";
 }
 
 export async function alternarFavorito(id: string) {
@@ -69,11 +109,14 @@ export async function alternarSeguir(id: string) {
   if (!get().usuario) return pedirCuenta("auth.reasonFollow", () => alternarSeguir(id));
   const cliente = sb(); if (!cliente) return;
   const p = catalogo().porId.get(id); if (!p) return;
+  // Sin precio visible (Amazon con precio de más de 24 h) no se puede crear una alerta; sí quitarla
+  if (p.sinPrecio && !get().seguidos.has(id)) return;
   const on = get().seguidos.has(id), antes = get().seguidos.get(id), objAntes = get().objetivos.get(id);
   set((s) => {
     const sg = new Map(s.seguidos), ob = new Map(s.objetivos);
-    if (on) { sg.delete(id); ob.delete(id); } else sg.set(id, p.precio);
-    return { seguidos: sg, objetivos: ob };
+    const cr = new Map(s.creados);
+    if (on) { sg.delete(id); ob.delete(id); cr.delete(id); } else { sg.set(id, p.precio); cr.set(id, new Date().toISOString()); }
+    return { seguidos: sg, objetivos: ob, creados: cr };
   });
   const r = on ? await cliente.from("seguidos").delete().eq("producto_id", id) : await cliente.from("seguidos").insert({ producto_id: id, precio_visto: p.precio });
   if (r.error && r.error.code !== "23505") {
@@ -140,11 +183,16 @@ export const marcarUsuarioOcupado = (v: string) => { revision = { v, libre: fals
 /* Recuperar contraseña: sesión abierta solo para poner la contraseña nueva. Si cierra sin ponerla, se cierra la sesión. */
 let claveSinCambiar = false;
 export const terminarCambioClave = () => { claveSinCambiar = false; };
-export function alCerrarAcceso() {
+export function alCerrarAcceso(modo?: ModoAcceso) {
   if (claveSinCambiar) { claveSinCambiar = false; sb()?.auth.signOut({ scope: "local" }).catch((e) => console.error(e)); }
+  // Términos sin aceptar: cerrar esa ventana = no aceptar → se cierra la sesión. Si se cerró otra (p. ej. elegir usuario), se piden ahora.
+  else if (faltaAceptar && get().usuario) {
+    if (modo === "terminos") { faltaAceptar = false; salir().catch((e) => console.error(e)); }
+    else setTimeout(() => { if (!get().acceso) abrirAcceso("terminos"); }, 250);
+  }
 }
 
-export async function salir() { await sb()?.auth.signOut(); }
+export async function salir() { faltaAceptar = false; await sb()?.auth.signOut(); }
 
 /* Arranque. Al abrir la web solo se carga Supabase si hay una sesión guardada o se vuelve de Google o del email.
    En los demás casos se carga la primera vez que hace falta (al abrir la ventana de cuenta): asegurarCuenta(). */
@@ -238,5 +286,5 @@ export async function entrarConGoogle(): Promise<string | null> {
 }
 
 // Menú de la cuenta y otros botones: «Mis favoritos», «Mis alertas», ajustes…
-export function abrirMisAlertas() { abrirAlertas(true); }
+export function abrirMisAlertas() { abrirAlertas(); }
 export function irAModo(modo: ModoAcceso) { abrirAcceso(modo); }

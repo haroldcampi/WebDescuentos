@@ -24,7 +24,9 @@ export function limpiarAvatar(c: unknown): ConfigAvatar {
 let dibujar: ((semilla: string, o?: OpcionesBlobatar) => string) | null = null;
 let EXPRESIONES: Record<string, unknown> = {};
 let carga: Promise<void> | null = null;
-// Se descarga aparte, cuando hace falta el primer avatar
+// Se descarga aparte, cuando hace falta el primer avatar.
+// Copia fija de blobatar 2.6.0 (dist/blob.js). sha256 de vendor/blobatar.js: 3b9493813a8a19526b141a3126887540f9cf7afc1cbcb6aa31cb507b56defb15
+// (si se actualiza la librería, compara el archivo nuevo con su origen y cambia este hash)
 export function cargarAvatares() {
   if (!carga) carga = Promise.all([import("./vendor/blobatar.js"), import("./vendor/blobatar-expression.js")])
     .then(([m, ex]) => { dibujar = m.blobatar; EXPRESIONES = ex as unknown as Record<string, unknown>; });
